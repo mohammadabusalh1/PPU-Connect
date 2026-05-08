@@ -1,0 +1,52 @@
+# Build outputs
+build/
+.dart_tool/
+.pub-cache/
+.pub/
+coverage/
+
+# Android build artifacts
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/.gradle/
+android/build/
+
+# iOS/macOS build artifacts
+ios/build/
+ios/Pods/
+ios/.symlinks/
+macos/build/
+macos/Pods/
+
+# Generated files
+*.g.dart
+*.freezed.dart
+*.mocks.dart
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Platform runner binaries
+windows/runner/*.exe
+linux/runner/
+
+# Assets (images, fonts — not useful for code context)
+assets/
+web/icons/
+ios/Runner/Assets.xcassets/
+macos/Runner/Assets.xcassets/
+android/app/src/main/res/mipmap-*/
+android/app/src/main/res/drawable*/
+
+# Lock files and dependency caches
+pubspec.lock
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# Logs
+*.log
