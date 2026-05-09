@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "158326219223",
+    "project_id": "ppucon",
+    "storage_bucket": "ppucon.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:158326219223:android:8de016c2a7d9aa10a2eb92",
+        "android_client_info": {
+          "package_name": "com.example.ppu_connect"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDu6pgRVP8hxxZwgIOz_EADoA6FBAosM18"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
