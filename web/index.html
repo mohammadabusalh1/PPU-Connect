@@ -31,8 +31,40 @@
 
   <title>ppu_connect</title>
   <link rel="manifest" href="manifest.json">
+  <style>
+    html, body {
+      height: 100%;
+      margin: 0;
+    }
+    body {
+      background: #cbb0eb;
+    }
+    #splash {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #cbb0eb;
+      z-index: 9999;
+    }
+    #splash img {
+      width: 160px;
+      height: 160px;
+      object-fit: contain;
+    }
+  </style>
 </head>
 <body>
+  <div id="splash">
+    <img src="assets/images/logo.png" alt="PPU Connect logo">
+  </div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('splash');
+      if (splash) splash.remove();
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

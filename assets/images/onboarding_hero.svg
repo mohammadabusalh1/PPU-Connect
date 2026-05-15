@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" width="320" height="240">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="320" y2="240" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#E3F2FD"/>
+      <stop offset="1" stop-color="#BBDEFB"/>
+    </linearGradient>
+    <linearGradient id="book" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1976D2"/>
+      <stop offset="1" stop-color="#0D47A1"/>
+    </linearGradient>
+  </defs>
+  <rect width="320" height="240" rx="24" fill="url(#bg)"/>
+  <ellipse cx="160" cy="200" rx="120" ry="28" fill="#90CAF9" fill-opacity="0.35"/>
+  <rect x="118" y="72" width="84" height="100" rx="6" fill="url(#book)"/>
+  <rect x="124" y="78" width="36" height="88" rx="2" fill="#E3F2FD"/>
+  <rect x="164" y="78" width="32" height="88" rx="2" fill="#BBDEFB"/>
+  <path d="M118 112h84" stroke="#0D47A1" stroke-opacity="0.25" stroke-width="3"/>
+  <circle cx="220" cy="88" r="28" fill="#FFFDE7" stroke="#FFC107" stroke-width="3"/>
+  <path d="M208 88c0-6 5-11 12-11s12 5 12 11" fill="none" stroke="#F57F17" stroke-width="2" stroke-linecap="round"/>
+  <circle cx="100" cy="96" r="22" fill="#E8F5E9" stroke="#43A047" stroke-width="2.5"/>
+  <path d="M92 96c4-8 14-10 20-4" fill="none" stroke="#2E7D32" stroke-width="2" stroke-linecap="round"/>
+</svg>

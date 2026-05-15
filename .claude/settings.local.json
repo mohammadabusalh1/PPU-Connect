@@ -8,7 +8,9 @@
       "WebFetch(domain:lottiefiles.com)",
       "WebSearch",
       "WebFetch(domain:api.github.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(Get-ChildItem -Path \"d:\\\\vsProject\\\\flutter\\\\ppu_connect\\\\lib\" -Recurse -Directory)",
+      "Bash(Select-Object FullName)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Mohmmad\\.claude"
