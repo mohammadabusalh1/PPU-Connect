@@ -6,9 +6,14 @@ import 'package:ppu_connect/presentation/widgets/buttons/primary_button.dart';
 import 'package:ppu_connect/presentation/widgets/form/app_text_field.dart';
 
 class CancelAppointmentPage extends StatefulWidget {
-  const CancelAppointmentPage({super.key, required this.appointmentId});
+  const CancelAppointmentPage({
+    super.key,
+    required this.appointmentId,
+    this.successLocation = '/schedule',
+  });
 
   final String appointmentId;
+  final String successLocation;
 
   @override
   State<CancelAppointmentPage> createState() => _CancelAppointmentPageState();
@@ -34,7 +39,7 @@ class _CancelAppointmentPageState extends State<CancelAppointmentPage> {
         );
     if (mounted) {
       setState(() => _submitting = false);
-      context.go('/schedule');
+      context.go(widget.successLocation);
     }
   }
 

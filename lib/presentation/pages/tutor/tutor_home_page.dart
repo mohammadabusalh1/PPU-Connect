@@ -14,7 +14,7 @@ import 'package:ppu_connect/presentation/cubits/notifications/notifications_cubi
 import 'package:ppu_connect/presentation/cubits/profile/profile_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/appointment/request_card.dart';
 import 'package:ppu_connect/presentation/widgets/user/user_avatar.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class TutorHomePage extends StatefulWidget {
   const TutorHomePage({super.key});
@@ -72,28 +72,46 @@ class _TutorHomePageState extends State<TutorHomePage> {
           final user =
               authState is AuthAuthenticated ? authState.user : null;
 
-          return CustomScrollView(
-            slivers: [
-              _HeaderSliver(
-                user: user,
-                greeting: _greeting(),
-                levelLabel: _levelLabel(user?.academicLevel),
-              ),
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-                sliver: SliverList(
-                  delegate: SliverChildListDelegate([
-                    const SizedBox(height: 24),
-                    _AvailabilityCard(onToggle: _toggleAccepting),
-                    const SizedBox(height: 24),
-                    _StatsGrid(),
-                    const SizedBox(height: 40),
-                    _PendingRequestsSection(),
-                    const SizedBox(height: 16),
-                  ]),
-                ),
-              ),
-            ],
+          return BlocBuilder<ProfileCubit, ProfileState>(
+            builder: (context, profileState) {
+              return BlocBuilder<AppointmentRequestsCubit,
+                  AppointmentRequestsState>(
+                builder: (context, reqState) {
+                  final isPageLoading = profileState is ProfileLoading ||
+                      profileState is ProfileInitial ||
+                      reqState is AppointmentRequestsLoading ||
+                      reqState is AppointmentRequestsInitial;
+
+                  if (isPageLoading) {
+                    return const LoadingIndicator();
+                  }
+
+                  return CustomScrollView(
+                    slivers: [
+                      _HeaderSliver(
+                        user: user,
+                        greeting: _greeting(),
+                        levelLabel: _levelLabel(user?.academicLevel),
+                      ),
+                      SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                        sliver: SliverList(
+                          delegate: SliverChildListDelegate([
+                            const SizedBox(height: 24),
+                            _AvailabilityCard(onToggle: _toggleAccepting),
+                            const SizedBox(height: 24),
+                            const _StatsGrid(),
+                            const SizedBox(height: 40),
+                            const _PendingRequestsSection(),
+                            const SizedBox(height: 16),
+                          ]),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
           );
         },
       ),
@@ -269,9 +287,6 @@ class _AvailabilityCard extends StatelessWidget {
 
     return BlocBuilder<ProfileCubit, ProfileState>(
       builder: (context, state) {
-        if (state is ProfileLoading || state is ProfileInitial) {
-          return _ShimmerBox(height: 72);
-        }
         if (state is! ProfileLoaded || state.tutorProfile == null) {
           return const SizedBox.shrink();
         }
@@ -340,6 +355,8 @@ class _AvailabilityCard extends StatelessWidget {
 // ── Stats Grid ────────────────────────────────────────────────────────────────
 
 class _StatsGrid extends StatelessWidget {
+  const _StatsGrid();
+
   static const _crossSpacing = 12.0;
   static const _mainSpacing = 12.0;
   static const _aspectRatio = 1.65;
@@ -350,15 +367,6 @@ class _StatsGrid extends StatelessWidget {
       builder: (context, profileState) {
         return BlocBuilder<AppointmentRequestsCubit, AppointmentRequestsState>(
           builder: (context, reqState) {
-            final isLoading = profileState is ProfileLoading ||
-                profileState is ProfileInitial;
-
-            if (isLoading) {
-              return _StatsGridLayout(
-                children: List.generate(4, (_) => const _ShimmerBox(height: 80)),
-              );
-            }
-
             final profile = profileState is ProfileLoaded
                 ? profileState.tutorProfile
                 : null;
@@ -591,6 +599,8 @@ class _SubjectPill extends StatelessWidget {
 // ── Pending Requests ──────────────────────────────────────────────────────────
 
 class _PendingRequestsSection extends StatelessWidget {
+  const _PendingRequestsSection();
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -598,15 +608,13 @@ class _PendingRequestsSection extends StatelessWidget {
 
     return BlocBuilder<AppointmentRequestsCubit, AppointmentRequestsState>(
       builder: (context, state) {
-        final isLoading = state is AppointmentRequestsLoading ||
-            state is AppointmentRequestsInitial;
-
-        final pending = state is AppointmentRequestsLoaded
+        final allPending = state is AppointmentRequestsLoaded
             ? state.requests
                 .where((r) => r.status == RequestStatus.pending)
-                .take(3)
                 .toList()
             : <AppointmentRequest>[];
+        final pending = allPending.take(3).toList();
+        final pendingCount = allPending.length;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -618,9 +626,9 @@ class _PendingRequestsSection extends StatelessWidget {
                   style: theme.textTheme.titleMedium
                       ?.copyWith(fontWeight: FontWeight.w700),
                 ),
-                if (!isLoading && pending.isNotEmpty) ...[
+                if (pendingCount > 0) ...[
                   const SizedBox(width: 8),
-                  _CountBadge(count: pending.length, color: cs.primary),
+                  _CountBadge(count: pendingCount, color: cs.primary),
                 ],
                 const Spacer(),
                 TextButton(
@@ -630,15 +638,7 @@ class _PendingRequestsSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            if (isLoading)
-              ...List.generate(
-                3,
-                (_) => const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: _ShimmerBox(height: 110),
-                ),
-              )
-            else if (pending.isEmpty)
+            if (pending.isEmpty)
               _EmptyRequests(cs: cs, theme: theme)
             else
               ...pending.asMap().entries.map(
@@ -723,29 +723,5 @@ class _EmptyRequests extends StatelessWidget {
         ),
       ),
     ).animate().fadeIn(duration: 400.ms);
-  }
-}
-
-// ── Shared shimmer placeholder ────────────────────────────────────────────────
-
-class _ShimmerBox extends StatelessWidget {
-  const _ShimmerBox({required this.height});
-
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: Container(
-        height: height,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-        ),
-      ),
-    );
   }
 }

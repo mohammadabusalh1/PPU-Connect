@@ -13,7 +13,11 @@ abstract interface class NotificationRemoteDataSource {
 @Injectable(as: NotificationRemoteDataSource)
 class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   const NotificationRemoteDataSourceImpl(this._firestore);
+
   final FirebaseFirestore _firestore;
+
+  static const _inboxLimit = 50;
+  static const _batchLimit = 500;
 
   CollectionReference<Map<String, dynamic>> get _col =>
       _firestore.collection('notifications');
@@ -28,34 +32,52 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   @override
   Stream<List<AppNotificationModel>> watchNotifications(String userId) => _col
       .where('userId', isEqualTo: userId)
+      .orderBy('createdAt', descending: true)
+      .limit(_inboxLimit)
       .snapshots()
-      .map((s) {
-        final list = s.docs
-            .map((d) => AppNotificationModel.fromJson({'id': d.id, ...d.data()}))
-            .toList();
-        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-        return list.take(50).toList();
-      });
+      .map(
+        (snapshot) => snapshot.docs
+            .map(
+              (doc) => AppNotificationModel.fromJson({
+                'id': doc.id,
+                ...doc.data(),
+              }),
+            )
+            .toList(),
+      );
 
   @override
-  Future<void> markAsRead(String notificationId) => _col
-      .doc(notificationId)
-      .update({'isRead': true, 'readAt': FieldValue.serverTimestamp()});
+  Future<void> markAsRead(String notificationId) async {
+    if (notificationId.isEmpty) {
+      throw Exception('Invalid notification id');
+    }
+    await _col.doc(notificationId).update({
+      'isRead': true,
+      'readAt': FieldValue.serverTimestamp(),
+    });
+  }
 
   @override
   Future<void> markAllAsRead(String userId) async {
-    final snap = await _col
-        .where('userId', isEqualTo: userId)
-        .where('isRead', isEqualTo: false)
-        .get();
-    final batch = _firestore.batch();
-    for (final doc in snap.docs) {
-      batch.update(doc.reference, {
-        'isRead': true,
-        'readAt': FieldValue.serverTimestamp(),
-      });
+    while (true) {
+      final snap = await _col
+          .where('userId', isEqualTo: userId)
+          .where('isRead', isEqualTo: false)
+          .limit(_batchLimit)
+          .get();
+      if (snap.docs.isEmpty) return;
+
+      final batch = _firestore.batch();
+      for (final doc in snap.docs) {
+        batch.update(doc.reference, {
+          'isRead': true,
+          'readAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+
+      if (snap.docs.length < _batchLimit) return;
     }
-    await batch.commit();
   }
 
   @override

@@ -6,7 +6,7 @@ import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment
 import 'package:ppu_connect/presentation/widgets/appointment/request_card.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class SentRequestsPage extends StatefulWidget {
   const SentRequestsPage({super.key});
@@ -35,7 +35,7 @@ class _SentRequestsPageState extends State<SentRequestsPage> {
       appBar: AppBar(title: const Text('Sent Requests')),
       body: BlocBuilder<AppointmentRequestsCubit, AppointmentRequestsState>(
         builder: (context, state) {
-          if (state is AppointmentRequestsLoading) return const _Skeleton();
+          if (state is AppointmentRequestsLoading) return const LoadingIndicator();
           if (state is AppointmentRequestsError) {
             return ErrorStateWidget(message: state.message, onRetry: _watch);
           }
@@ -50,38 +50,16 @@ class _SentRequestsPageState extends State<SentRequestsPage> {
               padding: const EdgeInsets.all(16),
               itemCount: state.requests.length,
               separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (context, i) => RequestCard(request: state.requests[i])
+              itemBuilder: (context, i) => RequestCard(
+                    request: state.requests[i],
+                    perspective: RequestCardPerspective.sent,
+                  )
                   .animate(delay: (i * 40).ms)
                   .fadeIn(duration: 250.ms),
             );
           }
           return const SizedBox.shrink();
         },
-      ),
-    );
-  }
-}
-
-class _Skeleton extends StatelessWidget {
-  const _Skeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 5,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
-          height: 90,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }

@@ -7,7 +7,7 @@ import 'package:ppu_connect/presentation/widgets/appointment/request_card.dart';
 import 'package:ppu_connect/core/constants/app_constants.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 
 class IncomingRequestsPage extends StatefulWidget {
@@ -37,7 +37,7 @@ class _IncomingRequestsPageState extends State<IncomingRequestsPage> {
       appBar: AppBar(title: const Text('Incoming Requests')),
       body: BlocBuilder<AppointmentRequestsCubit, AppointmentRequestsState>(
         builder: (context, state) {
-          if (state is AppointmentRequestsLoading) return const _Skeleton();
+          if (state is AppointmentRequestsLoading) return const LoadingIndicator();
           if (state is AppointmentRequestsError) {
             return ErrorStateWidget(message: state.message, onRetry: _watch);
           }
@@ -60,31 +60,6 @@ class _IncomingRequestsPageState extends State<IncomingRequestsPage> {
           }
           return const SizedBox.shrink();
         },
-      ),
-    );
-  }
-}
-
-class _Skeleton extends StatelessWidget {
-  const _Skeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 5,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
-          height: 90,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }

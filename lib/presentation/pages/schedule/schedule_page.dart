@@ -3,13 +3,17 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppu_connect/core/constants/app_constants.dart';
+import 'package:ppu_connect/core/utils/appointment_list_utils.dart';
+import 'package:ppu_connect/domain/entities/appointment.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/schedule/schedule_cubit.dart';
+import 'package:ppu_connect/presentation/navigation/appointment_routes.dart';
 import 'package:ppu_connect/presentation/widgets/appointment/appointment_card.dart';
+import 'package:ppu_connect/presentation/widgets/appointment/appointment_section_header.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class SchedulePage extends StatefulWidget {
   const SchedulePage({super.key});
@@ -26,10 +30,9 @@ class _SchedulePageState extends State<SchedulePage>
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _watch());
   }
 
-  void _watch() {
+  void _retryWatch() {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
       context.read<ScheduleCubit>().watch(authState.user.id);
@@ -48,21 +51,20 @@ class _SchedulePageState extends State<SchedulePage>
     final role =
         authState is AuthAuthenticated ? authState.user.role : UserRole.seeker;
     final isTutor = role == UserRole.tutor;
-    final showSentRequests = !isTutor;
-    final showDiscoverTutors = !isTutor;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Schedule'),
         bottom: TabBar(
           controller: _tabs,
+          dividerColor: Colors.transparent,
           tabs: const [
             Tab(text: 'Upcoming'),
             Tab(text: 'Past'),
           ],
         ),
         actions: [
-          if (showSentRequests)
+          if (!isTutor)
             IconButton(
               icon: const Icon(Icons.send_outlined),
               tooltip: 'Sent Requests',
@@ -72,26 +74,23 @@ class _SchedulePageState extends State<SchedulePage>
       ),
       body: BlocBuilder<ScheduleCubit, ScheduleState>(
         builder: (context, state) {
-          if (state is ScheduleLoading) return const _Skeleton();
+          if (state is ScheduleLoading || state is ScheduleInitial) {
+            return const LoadingIndicator();
+          }
           if (state is ScheduleError) {
-            debugPrint('Schedule load error: ${state.message}');
-            return ErrorStateWidget(
-              message: state.message,
-              onRetry: _watch,
-            );
+            return ErrorStateWidget(message: state.message, onRetry: _retryWatch);
           }
           if (state is ScheduleLoaded) {
             final now = DateTime.now();
             final upcoming = state.appointments
-                .where((a) =>
-                    a.startAt.isAfter(now) &&
-                    a.status != AppointmentStatus.cancelled)
+                .where((a) => isUpcomingAppointment(a, now))
                 .toList()
               ..sort((a, b) => a.startAt.compareTo(b.startAt));
             final past = state.appointments
-                .where((a) => a.startAt.isBefore(now) || a.status == AppointmentStatus.cancelled)
+                .where((a) => isPastAppointment(a, now))
                 .toList()
-              ..sort((a, b) => b.startAt.compareTo(a.startAt));
+              ..sort((a, b) =>
+                  historySortInstant(b).compareTo(historySortInstant(a)));
 
             return TabBarView(
               controller: _tabs,
@@ -99,19 +98,19 @@ class _SchedulePageState extends State<SchedulePage>
                 _AppointmentList(
                   appointments: upcoming,
                   isTutor: isTutor,
+                  isUpcoming: true,
                   emptyTitle: 'No upcoming sessions',
                   subtitle: isTutor
                       ? 'Accepted requests will appear here'
                       : 'Book a session and it will show up here',
                   lottieAsset: AppLottie.emptySearch,
-                  actionLabel: showDiscoverTutors ? 'Discover tutors' : null,
-                  action: showDiscoverTutors
-                      ? () => context.push('/discover')
-                      : null,
+                  actionLabel: !isTutor ? 'Discover tutors' : null,
+                  action: !isTutor ? () => context.push('/discover') : null,
                 ),
                 _AppointmentList(
                   appointments: past,
                   isTutor: isTutor,
+                  isUpcoming: false,
                   emptyTitle: 'No past sessions',
                   subtitle: 'Completed or cancelled sessions will appear here',
                   lottieAsset: AppLottie.emptySearch,
@@ -126,10 +125,13 @@ class _SchedulePageState extends State<SchedulePage>
   }
 }
 
+// ── List with date-group section headers ────────────────────────────────────
+
 class _AppointmentList extends StatelessWidget {
   const _AppointmentList({
     required this.appointments,
     required this.isTutor,
+    required this.isUpcoming,
     required this.emptyTitle,
     this.subtitle,
     this.lottieAsset,
@@ -137,8 +139,9 @@ class _AppointmentList extends StatelessWidget {
     this.actionLabel,
   });
 
-  final List appointments;
+  final List<Appointment> appointments;
   final bool isTutor;
+  final bool isUpcoming;
   final String emptyTitle;
   final String? subtitle;
   final String? lottieAsset;
@@ -156,46 +159,43 @@ class _AppointmentList extends StatelessWidget {
         actionLabel: actionLabel,
       );
     }
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: appointments.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+
+    final items = isUpcoming
+        ? groupAppointmentsByUpcomingHeader(appointments)
+        : groupAppointmentsByPastHeader(appointments);
+
+    var cardIndex = 0;
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemCount: items.length,
       itemBuilder: (context, i) {
-        final a = appointments[i];
-        final peerName = isTutor
-            ? (a.seekerName ?? 'Student')
-            : (a.tutorName ?? 'Tutor');
-        return AppointmentCard(
-          appointment: a,
-          peerName: peerName,
-          onTap: () => context.push('/schedule/appointments/${a.id}'),
-        ).animate(delay: (i * 40).ms).fadeIn(duration: 250.ms);
+        final item = items[i];
+        if (item is String) {
+          return AppointmentSectionHeader(label: item);
+        }
+        final appt = item as Appointment;
+        final peerName =
+            isTutor ? (appt.seekerName ?? 'Student') : (appt.tutorName ?? 'Tutor');
+        final delay = (cardIndex * 30).ms;
+        cardIndex++;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: AppointmentCard(
+            appointment: appt,
+            peerName: peerName,
+            onTap: () => context.push(
+              AppointmentRouteScope.schedule.appointmentDetail(appt.id),
+            ),
+          ).animate(delay: delay).fadeIn(duration: 220.ms).slideY(
+                begin: 0.04,
+                end: 0,
+                duration: 220.ms,
+                curve: Curves.easeOut,
+              ),
+        );
       },
     );
   }
-}
 
-class _Skeleton extends StatelessWidget {
-  const _Skeleton();
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
-          height: 100,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
 }

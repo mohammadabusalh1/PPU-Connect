@@ -27,6 +27,7 @@ mixin _$AppNotificationModel {
   NotificationType get type => throw _privateConstructorUsedError;
   String get title => throw _privateConstructorUsedError;
   String get body => throw _privateConstructorUsedError;
+  @StringMapConverter()
   Map<String, String> get payload => throw _privateConstructorUsedError;
   bool get isRead => throw _privateConstructorUsedError;
   @NullableTimestampConverter()
@@ -57,7 +58,7 @@ abstract class $AppNotificationModelCopyWith<$Res> {
     @NotificationTypeConverter() NotificationType type,
     String title,
     String body,
-    Map<String, String> payload,
+    @StringMapConverter() Map<String, String> payload,
     bool isRead,
     @NullableTimestampConverter() DateTime? readAt,
     @TimestampConverter() DateTime createdAt,
@@ -151,7 +152,7 @@ abstract class _$$AppNotificationModelImplCopyWith<$Res>
     @NotificationTypeConverter() NotificationType type,
     String title,
     String body,
-    Map<String, String> payload,
+    @StringMapConverter() Map<String, String> payload,
     bool isRead,
     @NullableTimestampConverter() DateTime? readAt,
     @TimestampConverter() DateTime createdAt,
@@ -234,7 +235,7 @@ class _$AppNotificationModelImpl implements _AppNotificationModel {
     @NotificationTypeConverter() required this.type,
     required this.title,
     required this.body,
-    required final Map<String, String> payload,
+    @StringMapConverter() final Map<String, String> payload = const {},
     required this.isRead,
     @NullableTimestampConverter() this.readAt,
     @TimestampConverter() required this.createdAt,
@@ -256,6 +257,8 @@ class _$AppNotificationModelImpl implements _AppNotificationModel {
   final String body;
   final Map<String, String> _payload;
   @override
+  @JsonKey()
+  @StringMapConverter()
   Map<String, String> get payload {
     if (_payload is EqualUnmodifiableMapView) return _payload;
     // ignore: implicit_dynamic_type
@@ -333,7 +336,7 @@ abstract class _AppNotificationModel implements AppNotificationModel {
     @NotificationTypeConverter() required final NotificationType type,
     required final String title,
     required final String body,
-    required final Map<String, String> payload,
+    @StringMapConverter() final Map<String, String> payload,
     required final bool isRead,
     @NullableTimestampConverter() final DateTime? readAt,
     @TimestampConverter() required final DateTime createdAt,
@@ -354,6 +357,7 @@ abstract class _AppNotificationModel implements AppNotificationModel {
   @override
   String get body;
   @override
+  @StringMapConverter()
   Map<String, String> get payload;
   @override
   bool get isRead;

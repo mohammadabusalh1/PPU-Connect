@@ -1,5 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:ppu_connect/core/validators/scheduling_validators.dart';
+import 'package:ppu_connect/domain/entities/weekly_slot.dart';
+import 'package:ppu_connect/domain/value_objects/app_time_of_day.dart';
 
 void main() {
   group('SessionDurationValidator.valid', () {
@@ -149,6 +151,80 @@ void main() {
         WeeklySlotCountValidator.maxPerDay(9),
         'Maximum 8 slots per day',
       );
+    });
+  });
+
+  group('WeeklySlotValidator', () {
+    const start = AppTimeOfDay(hour: 10, minute: 0);
+    const end = AppTimeOfDay(hour: 11, minute: 0);
+
+    test('accepts valid same-day slot', () {
+      expect(WeeklySlotValidator.validateTimes(start, end), isNull);
+    });
+
+    test('rejects end on or before start', () {
+      expect(
+        WeeklySlotValidator.validateTimes(
+          const AppTimeOfDay(hour: 14, minute: 0),
+          const AppTimeOfDay(hour: 14, minute: 0),
+        ),
+        contains('same day'),
+      );
+      expect(
+        WeeklySlotValidator.validateTimes(
+          const AppTimeOfDay(hour: 14, minute: 0),
+          const AppTimeOfDay(hour: 13, minute: 0),
+        ),
+        isNotNull,
+      );
+    });
+
+    test('rejects slots shorter than 30 minutes', () {
+      expect(
+        WeeklySlotValidator.validateTimes(
+          start,
+          const AppTimeOfDay(hour: 10, minute: 15),
+        ),
+        contains('30 minutes'),
+      );
+    });
+
+    test('rejects slots longer than 3 hours', () {
+      expect(
+        WeeklySlotValidator.validateTimes(
+          start,
+          const AppTimeOfDay(hour: 13, minute: 15),
+        ),
+        contains('3 hours'),
+      );
+    });
+
+    test('rejects non-quarter-hour times', () {
+      expect(
+        WeeklySlotValidator.validateTimes(
+          const AppTimeOfDay(hour: 10, minute: 10),
+          end,
+        ),
+        contains('15-minute'),
+      );
+    });
+
+    test('detects overlapping slots on the same day', () {
+      final a = WeeklySlot(
+        id: '1',
+        dayOfWeek: 1,
+        startTime: start,
+        endTime: end,
+        isActive: true,
+      );
+      final b = WeeklySlot(
+        id: '2',
+        dayOfWeek: 1,
+        startTime: const AppTimeOfDay(hour: 10, minute: 30),
+        endTime: const AppTimeOfDay(hour: 12, minute: 0),
+        isActive: true,
+      );
+      expect(WeeklySlotValidator.overlaps(a, b), isTrue);
     });
   });
 

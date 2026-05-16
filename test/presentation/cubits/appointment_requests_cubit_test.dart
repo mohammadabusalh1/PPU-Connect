@@ -67,21 +67,15 @@ void main() {
     blocTest<AppointmentRequestsCubit, AppointmentRequestsState>(
       'emits error when stream emits error',
       build: () {
-        final controller = StreamController<List<AppointmentRequest>>();
-        when(() => repo.watchIncomingRequests(any()))
-            .thenAnswer((_) => controller.stream);
-        return AppointmentRequestsCubit(repo)
-          ..watchIncoming('tutor1');
-      },
-      act: (cubit) {
-        // Error is already added via build, so trigger via act doesn't apply;
-        // we need a different setup. Using a stream that emits error:
-      },
-      setUp: () {
         when(() => repo.watchIncomingRequests(any()))
             .thenAnswer((_) => Stream.error(Exception('stream-error')));
+        return AppointmentRequestsCubit(repo);
       },
-      expect: () => [],
+      act: (cubit) => cubit.watchIncoming('tutor1'),
+      expect: () => [
+        isA<AppointmentRequestsLoading>(),
+        predicate<AppointmentRequestsError>((s) => s.message == 'stream-error'),
+      ],
     );
 
     blocTest<AppointmentRequestsCubit, AppointmentRequestsState>(
@@ -204,29 +198,45 @@ void main() {
   });
 
   group('AppointmentRequestsCubit.sendRequest', () {
-    blocTest<AppointmentRequestsCubit, AppointmentRequestsState>(
-      'calls repository sendRequest',
-      build: () {
-        when(() => repo.sendRequest(any())).thenAnswer((_) async => _fakeRequest());
-        return AppointmentRequestsCubit(repo);
-      },
-      act: (cubit) => cubit.sendRequest(_fakeRequest()),
-      verify: (_) {
-        verify(() => repo.sendRequest(any())).called(1);
-      },
-    );
+    test('returns ok:true on success', () async {
+      when(() => repo.sendRequest(any())).thenAnswer((_) async => _fakeRequest());
+      final cubit = AppointmentRequestsCubit(repo);
 
-    blocTest<AppointmentRequestsCubit, AppointmentRequestsState>(
-      'emits error state when sendRequest throws',
-      build: () {
-        when(() => repo.sendRequest(any()))
-            .thenThrow(Exception('quota-exceeded'));
-        return AppointmentRequestsCubit(repo);
-      },
-      act: (cubit) => cubit.sendRequest(_fakeRequest()),
-      expect: () => [
-        predicate<AppointmentRequestsError>((s) => s.message == 'quota-exceeded'),
-      ],
-    );
+      final result = await cubit.sendRequest(_fakeRequest());
+
+      expect(result.ok, isTrue);
+      expect(cubit.state, isA<AppointmentRequestsInitial>());
+      await cubit.close();
+    });
+
+    test('returns ok:false without polluting state', () async {
+      when(() => repo.sendRequest(any()))
+          .thenThrow(Exception('quota-exceeded'));
+      final cubit = AppointmentRequestsCubit(repo);
+
+      final result = await cubit.sendRequest(_fakeRequest());
+
+      expect(result.ok, isFalse);
+      expect(result.error, 'quota-exceeded');
+      expect(cubit.state, isA<AppointmentRequestsInitial>());
+      await cubit.close();
+    });
+  });
+
+  group('AppointmentRequestsCubit.watchForDetail', () {
+    test('watches incoming when user is tutor on request', () async {
+      when(() => repo.getRequest('req1')).thenAnswer(
+        (_) async => _fakeRequest(id: 'req1').copyWith(tutorId: 'tutor1'),
+      );
+      when(() => repo.watchIncomingRequests('tutor1'))
+          .thenAnswer((_) => Stream.value([_fakeRequest(id: 'req1')]));
+      final cubit = AppointmentRequestsCubit(repo);
+
+      await cubit.watchForDetail(userId: 'tutor1', requestId: 'req1');
+      await Future<void>.delayed(Duration.zero);
+
+      expect(cubit.state, isA<AppointmentRequestsLoaded>());
+      await cubit.close();
+    });
   });
 }

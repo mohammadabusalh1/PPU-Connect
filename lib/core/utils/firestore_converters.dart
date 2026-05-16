@@ -140,6 +140,22 @@ class ReportStatusConverter implements JsonConverter<ReportStatus, String> {
   String toJson(ReportStatus v) => v.name;
 }
 
+class StringMapConverter implements JsonConverter<Map<String, String>, dynamic> {
+  const StringMapConverter();
+
+  @override
+  Map<String, String> fromJson(dynamic json) {
+    if (json == null) return {};
+    if (json is! Map) return {};
+    return json.map(
+      (key, value) => MapEntry(key.toString(), value?.toString() ?? ''),
+    );
+  }
+
+  @override
+  dynamic toJson(Map<String, String> object) => object;
+}
+
 class NotificationTypeConverter
     implements JsonConverter<NotificationType, String> {
   const NotificationTypeConverter();

@@ -18,14 +18,19 @@ final _privateConstructorUsedError = UnsupportedError(
 /// @nodoc
 mixin _$Payment {
   String get id => throw _privateConstructorUsedError;
-  String get appointmentId => throw _privateConstructorUsedError;
+  String? get appointmentId => throw _privateConstructorUsedError;
+  String get requestId => throw _privateConstructorUsedError;
   String get tutorId => throw _privateConstructorUsedError;
   String get seekerId => throw _privateConstructorUsedError;
   double get amount => throw _privateConstructorUsedError;
   String get currency => throw _privateConstructorUsedError;
   PaymentStatus get status => throw _privateConstructorUsedError;
+  String get cardLast4 => throw _privateConstructorUsedError;
+  String get cardBrand => throw _privateConstructorUsedError;
   DateTime? get releasedAt => throw _privateConstructorUsedError;
   DateTime? get refundedAt => throw _privateConstructorUsedError;
+  DateTime? get refundRequestedAt => throw _privateConstructorUsedError;
+  String? get refundReason => throw _privateConstructorUsedError;
   DateTime get createdAt => throw _privateConstructorUsedError;
   DateTime get updatedAt => throw _privateConstructorUsedError;
 
@@ -42,14 +47,19 @@ abstract class $PaymentCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String appointmentId,
+    String? appointmentId,
+    String requestId,
     String tutorId,
     String seekerId,
     double amount,
     String currency,
     PaymentStatus status,
+    String cardLast4,
+    String cardBrand,
     DateTime? releasedAt,
     DateTime? refundedAt,
+    DateTime? refundRequestedAt,
+    String? refundReason,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -71,14 +81,19 @@ class _$PaymentCopyWithImpl<$Res, $Val extends Payment>
   @override
   $Res call({
     Object? id = null,
-    Object? appointmentId = null,
+    Object? appointmentId = freezed,
+    Object? requestId = null,
     Object? tutorId = null,
     Object? seekerId = null,
     Object? amount = null,
     Object? currency = null,
     Object? status = null,
+    Object? cardLast4 = null,
+    Object? cardBrand = null,
     Object? releasedAt = freezed,
     Object? refundedAt = freezed,
+    Object? refundRequestedAt = freezed,
+    Object? refundReason = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -88,9 +103,13 @@ class _$PaymentCopyWithImpl<$Res, $Val extends Payment>
                 ? _value.id
                 : id // ignore: cast_nullable_to_non_nullable
                       as String,
-            appointmentId: null == appointmentId
+            appointmentId: freezed == appointmentId
                 ? _value.appointmentId
                 : appointmentId // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            requestId: null == requestId
+                ? _value.requestId
+                : requestId // ignore: cast_nullable_to_non_nullable
                       as String,
             tutorId: null == tutorId
                 ? _value.tutorId
@@ -112,6 +131,14 @@ class _$PaymentCopyWithImpl<$Res, $Val extends Payment>
                 ? _value.status
                 : status // ignore: cast_nullable_to_non_nullable
                       as PaymentStatus,
+            cardLast4: null == cardLast4
+                ? _value.cardLast4
+                : cardLast4 // ignore: cast_nullable_to_non_nullable
+                      as String,
+            cardBrand: null == cardBrand
+                ? _value.cardBrand
+                : cardBrand // ignore: cast_nullable_to_non_nullable
+                      as String,
             releasedAt: freezed == releasedAt
                 ? _value.releasedAt
                 : releasedAt // ignore: cast_nullable_to_non_nullable
@@ -120,6 +147,14 @@ class _$PaymentCopyWithImpl<$Res, $Val extends Payment>
                 ? _value.refundedAt
                 : refundedAt // ignore: cast_nullable_to_non_nullable
                       as DateTime?,
+            refundRequestedAt: freezed == refundRequestedAt
+                ? _value.refundRequestedAt
+                : refundRequestedAt // ignore: cast_nullable_to_non_nullable
+                      as DateTime?,
+            refundReason: freezed == refundReason
+                ? _value.refundReason
+                : refundReason // ignore: cast_nullable_to_non_nullable
+                      as String?,
             createdAt: null == createdAt
                 ? _value.createdAt
                 : createdAt // ignore: cast_nullable_to_non_nullable
@@ -144,14 +179,19 @@ abstract class _$$PaymentImplCopyWith<$Res> implements $PaymentCopyWith<$Res> {
   @useResult
   $Res call({
     String id,
-    String appointmentId,
+    String? appointmentId,
+    String requestId,
     String tutorId,
     String seekerId,
     double amount,
     String currency,
     PaymentStatus status,
+    String cardLast4,
+    String cardBrand,
     DateTime? releasedAt,
     DateTime? refundedAt,
+    DateTime? refundRequestedAt,
+    String? refundReason,
     DateTime createdAt,
     DateTime updatedAt,
   });
@@ -172,14 +212,19 @@ class __$$PaymentImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? id = null,
-    Object? appointmentId = null,
+    Object? appointmentId = freezed,
+    Object? requestId = null,
     Object? tutorId = null,
     Object? seekerId = null,
     Object? amount = null,
     Object? currency = null,
     Object? status = null,
+    Object? cardLast4 = null,
+    Object? cardBrand = null,
     Object? releasedAt = freezed,
     Object? refundedAt = freezed,
+    Object? refundRequestedAt = freezed,
+    Object? refundReason = freezed,
     Object? createdAt = null,
     Object? updatedAt = null,
   }) {
@@ -189,9 +234,13 @@ class __$$PaymentImplCopyWithImpl<$Res>
             ? _value.id
             : id // ignore: cast_nullable_to_non_nullable
                   as String,
-        appointmentId: null == appointmentId
+        appointmentId: freezed == appointmentId
             ? _value.appointmentId
             : appointmentId // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        requestId: null == requestId
+            ? _value.requestId
+            : requestId // ignore: cast_nullable_to_non_nullable
                   as String,
         tutorId: null == tutorId
             ? _value.tutorId
@@ -213,6 +262,14 @@ class __$$PaymentImplCopyWithImpl<$Res>
             ? _value.status
             : status // ignore: cast_nullable_to_non_nullable
                   as PaymentStatus,
+        cardLast4: null == cardLast4
+            ? _value.cardLast4
+            : cardLast4 // ignore: cast_nullable_to_non_nullable
+                  as String,
+        cardBrand: null == cardBrand
+            ? _value.cardBrand
+            : cardBrand // ignore: cast_nullable_to_non_nullable
+                  as String,
         releasedAt: freezed == releasedAt
             ? _value.releasedAt
             : releasedAt // ignore: cast_nullable_to_non_nullable
@@ -221,6 +278,14 @@ class __$$PaymentImplCopyWithImpl<$Res>
             ? _value.refundedAt
             : refundedAt // ignore: cast_nullable_to_non_nullable
                   as DateTime?,
+        refundRequestedAt: freezed == refundRequestedAt
+            ? _value.refundRequestedAt
+            : refundRequestedAt // ignore: cast_nullable_to_non_nullable
+                  as DateTime?,
+        refundReason: freezed == refundReason
+            ? _value.refundReason
+            : refundReason // ignore: cast_nullable_to_non_nullable
+                  as String?,
         createdAt: null == createdAt
             ? _value.createdAt
             : createdAt // ignore: cast_nullable_to_non_nullable
@@ -239,14 +304,19 @@ class __$$PaymentImplCopyWithImpl<$Res>
 class _$PaymentImpl implements _Payment {
   const _$PaymentImpl({
     required this.id,
-    required this.appointmentId,
+    this.appointmentId,
+    required this.requestId,
     required this.tutorId,
     required this.seekerId,
     required this.amount,
     required this.currency,
     required this.status,
+    required this.cardLast4,
+    required this.cardBrand,
     this.releasedAt,
     this.refundedAt,
+    this.refundRequestedAt,
+    this.refundReason,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -254,7 +324,9 @@ class _$PaymentImpl implements _Payment {
   @override
   final String id;
   @override
-  final String appointmentId;
+  final String? appointmentId;
+  @override
+  final String requestId;
   @override
   final String tutorId;
   @override
@@ -266,9 +338,17 @@ class _$PaymentImpl implements _Payment {
   @override
   final PaymentStatus status;
   @override
+  final String cardLast4;
+  @override
+  final String cardBrand;
+  @override
   final DateTime? releasedAt;
   @override
   final DateTime? refundedAt;
+  @override
+  final DateTime? refundRequestedAt;
+  @override
+  final String? refundReason;
   @override
   final DateTime createdAt;
   @override
@@ -276,7 +356,7 @@ class _$PaymentImpl implements _Payment {
 
   @override
   String toString() {
-    return 'Payment(id: $id, appointmentId: $appointmentId, tutorId: $tutorId, seekerId: $seekerId, amount: $amount, currency: $currency, status: $status, releasedAt: $releasedAt, refundedAt: $refundedAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Payment(id: $id, appointmentId: $appointmentId, requestId: $requestId, tutorId: $tutorId, seekerId: $seekerId, amount: $amount, currency: $currency, status: $status, cardLast4: $cardLast4, cardBrand: $cardBrand, releasedAt: $releasedAt, refundedAt: $refundedAt, refundRequestedAt: $refundRequestedAt, refundReason: $refundReason, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -287,6 +367,8 @@ class _$PaymentImpl implements _Payment {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.appointmentId, appointmentId) ||
                 other.appointmentId == appointmentId) &&
+            (identical(other.requestId, requestId) ||
+                other.requestId == requestId) &&
             (identical(other.tutorId, tutorId) || other.tutorId == tutorId) &&
             (identical(other.seekerId, seekerId) ||
                 other.seekerId == seekerId) &&
@@ -294,10 +376,18 @@ class _$PaymentImpl implements _Payment {
             (identical(other.currency, currency) ||
                 other.currency == currency) &&
             (identical(other.status, status) || other.status == status) &&
+            (identical(other.cardLast4, cardLast4) ||
+                other.cardLast4 == cardLast4) &&
+            (identical(other.cardBrand, cardBrand) ||
+                other.cardBrand == cardBrand) &&
             (identical(other.releasedAt, releasedAt) ||
                 other.releasedAt == releasedAt) &&
             (identical(other.refundedAt, refundedAt) ||
                 other.refundedAt == refundedAt) &&
+            (identical(other.refundRequestedAt, refundRequestedAt) ||
+                other.refundRequestedAt == refundRequestedAt) &&
+            (identical(other.refundReason, refundReason) ||
+                other.refundReason == refundReason) &&
             (identical(other.createdAt, createdAt) ||
                 other.createdAt == createdAt) &&
             (identical(other.updatedAt, updatedAt) ||
@@ -309,13 +399,18 @@ class _$PaymentImpl implements _Payment {
     runtimeType,
     id,
     appointmentId,
+    requestId,
     tutorId,
     seekerId,
     amount,
     currency,
     status,
+    cardLast4,
+    cardBrand,
     releasedAt,
     refundedAt,
+    refundRequestedAt,
+    refundReason,
     createdAt,
     updatedAt,
   );
@@ -332,14 +427,19 @@ class _$PaymentImpl implements _Payment {
 abstract class _Payment implements Payment {
   const factory _Payment({
     required final String id,
-    required final String appointmentId,
+    final String? appointmentId,
+    required final String requestId,
     required final String tutorId,
     required final String seekerId,
     required final double amount,
     required final String currency,
     required final PaymentStatus status,
+    required final String cardLast4,
+    required final String cardBrand,
     final DateTime? releasedAt,
     final DateTime? refundedAt,
+    final DateTime? refundRequestedAt,
+    final String? refundReason,
     required final DateTime createdAt,
     required final DateTime updatedAt,
   }) = _$PaymentImpl;
@@ -347,7 +447,9 @@ abstract class _Payment implements Payment {
   @override
   String get id;
   @override
-  String get appointmentId;
+  String? get appointmentId;
+  @override
+  String get requestId;
   @override
   String get tutorId;
   @override
@@ -359,9 +461,17 @@ abstract class _Payment implements Payment {
   @override
   PaymentStatus get status;
   @override
+  String get cardLast4;
+  @override
+  String get cardBrand;
+  @override
   DateTime? get releasedAt;
   @override
   DateTime? get refundedAt;
+  @override
+  DateTime? get refundRequestedAt;
+  @override
+  String? get refundReason;
   @override
   DateTime get createdAt;
   @override

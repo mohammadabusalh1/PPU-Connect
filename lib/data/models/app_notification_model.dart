@@ -15,7 +15,7 @@ class AppNotificationModel with _$AppNotificationModel {
     @NotificationTypeConverter() required NotificationType type,
     required String title,
     required String body,
-    required Map<String, String> payload,
+    @StringMapConverter() @Default({}) Map<String, String> payload,
     required bool isRead,
     @NullableTimestampConverter() DateTime? readAt,
     @TimestampConverter() required DateTime createdAt,

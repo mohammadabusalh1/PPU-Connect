@@ -7,7 +7,7 @@ import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/tutoring_requests/tutoring_requests_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class MyTutoringRequestsPage extends StatefulWidget {
   const MyTutoringRequestsPage({super.key});
@@ -42,7 +42,7 @@ class _MyTutoringRequestsPageState extends State<MyTutoringRequestsPage> {
       ),
       body: BlocBuilder<TutoringRequestsCubit, TutoringRequestsState>(
         builder: (context, state) {
-          if (state is TutoringRequestsLoading) return _buildSkeleton(context);
+          if (state is TutoringRequestsLoading) return const LoadingIndicator();
           if (state is TutoringRequestsError) {
             return ErrorStateWidget(message: state.message, onRetry: _watch);
           }
@@ -90,26 +90,6 @@ class _MyTutoringRequestsPageState extends State<MyTutoringRequestsPage> {
           }
           return const SizedBox.shrink();
         },
-      ),
-    );
-  }
-
-  Widget _buildSkeleton(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }

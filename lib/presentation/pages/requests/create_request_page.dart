@@ -2,19 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:ppu_connect/core/di/injection.dart';
+import 'package:ppu_connect/core/utils/session_schedule_utils.dart';
+import 'package:ppu_connect/core/validators/scheduling_validators.dart';
 import 'package:ppu_connect/domain/entities/appointment_request.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 import 'package:ppu_connect/domain/entities/weekly_slot.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
-import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment_requests_cubit.dart';
+import 'package:ppu_connect/presentation/cubits/checkout/checkout_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/tutor_availability/tutor_availability_cubit.dart';
+import 'package:ppu_connect/core/validators/request_validators.dart';
 import 'package:ppu_connect/presentation/widgets/buttons/primary_button.dart';
 import 'package:ppu_connect/presentation/widgets/form/app_text_field.dart';
+import 'package:ppu_connect/presentation/widgets/payment/checkout_sheet.dart';
 
 class CreateRequestPage extends StatefulWidget {
-  const CreateRequestPage({super.key, required this.tutorId});
+  const CreateRequestPage({
+    super.key,
+    required this.tutorId,
+    this.tutorName = 'Tutor',
+  });
 
   final String tutorId;
+  final String tutorName;
 
   @override
   State<CreateRequestPage> createState() => _CreateRequestPageState();
@@ -27,8 +38,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
 
   DateTime? _selectedDate;
   WeeklySlot? _selectedSlot;
-  bool _submitting = false;
-
   @override
   void dispose() {
     _subjectCtrl.dispose();
@@ -56,7 +65,7 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
     );
     if (date == null) return;
     setState(() {
-      _selectedDate = date;
+      _selectedDate = normalizeCalendarDate(date);
       _selectedSlot = null;
     });
   }
@@ -81,25 +90,29 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
     final authState = context.read<AuthBloc>().state;
     if (authState is! AuthAuthenticated) return;
 
-    final startAt = DateTime(
-      _selectedDate!.year,
-      _selectedDate!.month,
-      _selectedDate!.day,
-      _selectedSlot!.startTime.hour,
-      _selectedSlot!.startTime.minute,
-    );
-    final endAt = DateTime(
-      _selectedDate!.year,
-      _selectedDate!.month,
-      _selectedDate!.day,
-      _selectedSlot!.endTime.hour,
-      _selectedSlot!.endTime.minute,
-    );
-    final expiresAt = startAt.subtract(const Duration(hours: 1));
+    final availState = context.read<TutorAvailabilityCubit>().state;
+    if (availState is! TutorAvailabilityLoaded) return;
 
-    setState(() => _submitting = true);
+    final startAt = sessionStartOnDate(
+      _selectedDate!,
+      _selectedSlot!.startTime,
+    );
+    final endAt = sessionEndOnDate(
+      _selectedDate!,
+      _selectedSlot!.startTime,
+      _selectedSlot!.endTime,
+    );
+    final timeError = SlotTimeValidator.endAfterStart(startAt, endAt);
+    if (timeError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(timeError)),
+      );
+      return;
+    }
+    final expiresAt = startAt.subtract(const Duration(hours: 1));
     final now = DateTime.now();
-    final request = AppointmentRequest(
+
+    final draft = AppointmentRequest(
       id: '',
       senderId: authState.user.id,
       senderName: authState.user.fullName,
@@ -117,50 +130,48 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
       updatedAt: now,
     );
 
-    await context.read<AppointmentRequestsCubit>().sendRequest(request);
-    if (!mounted) return;
-    setState(() => _submitting = false);
-
-    final cubitState = context.read<AppointmentRequestsCubit>().state;
-    if (cubitState is AppointmentRequestsError) return;
-
-    await showModalBottomSheet<void>(
+    final ok = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (_) => _RequestSentSheet(
-        expiresAt: expiresAt,
-        onViewRequests: () {
-          Navigator.of(context).pop();
-          context.go('/requests/sent');
-        },
-        onDone: () {
-          Navigator.of(context).pop();
-          context.pop();
-        },
+      useSafeArea: true,
+      builder: (_) => BlocProvider(
+        create: (_) => getIt<CheckoutCubit>(),
+        child: CheckoutSheet(
+          draft: draft,
+          tutorProfile: availState.tutorProfile,
+          tutorName: widget.tutorName,
+        ),
       ),
     );
+    if (ok == true && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Request sent & payment held')),
+      );
+      context.pop();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (widget.tutorId.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Request Session')),
+        body: const Center(
+          child: Padding(
+            padding: EdgeInsets.all(24),
+            child: Text('Invalid tutor. Go back and try again.'),
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text('Request Session')),
-      body: BlocListener<AppointmentRequestsCubit, AppointmentRequestsState>(
-        listener: (context, state) {
-          if (state is AppointmentRequestsError) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(state.message)),
-            );
-          }
-        },
-        child: BlocBuilder<TutorAvailabilityCubit, TutorAvailabilityState>(
+      body: BlocBuilder<TutorAvailabilityCubit, TutorAvailabilityState>(
           builder: (context, availState) {
             if (availState is TutorAvailabilityLoading ||
                 availState is TutorAvailabilityInitial) {
-              return const Center(child: CircularProgressIndicator());
+              return const LoadingIndicator();
             }
             if (availState is TutorAvailabilityError) {
               return Center(
@@ -201,7 +212,6 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
             return const SizedBox.shrink();
           },
         ),
-      ),
     );
   }
 
@@ -219,7 +229,7 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
           AppTextField(
             controller: _subjectCtrl,
             label: 'Subject',
-            validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+            validator: RequestSubjectValidator.required,
           ),
           const SizedBox(height: 20),
           _SectionLabel(
@@ -257,88 +267,15 @@ class _CreateRequestPageState extends State<CreateRequestPage> {
             controller: _noteCtrl,
             label: 'Note (optional)',
             maxLines: 3,
+            validator: RequestNotesValidator.optionalForAppointment,
           ),
           const SizedBox(height: 32),
           PrimaryButton(
-            label: 'Send Request',
-            loading: _submitting,
+            label: 'Continue to Payment',
             onPressed: _submit,
           ),
           const SizedBox(height: 16),
         ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _RequestSentSheet extends StatelessWidget {
-  const _RequestSentSheet({
-    required this.expiresAt,
-    required this.onViewRequests,
-    required this.onDone,
-  });
-
-  final DateTime expiresAt;
-  final VoidCallback onViewRequests;
-  final VoidCallback onDone;
-
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final fmt = DateFormat('EEE, MMM d \'at\' h:mm a');
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 28, 24, 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: cs.primaryContainer,
-                shape: BoxShape.circle,
-              ),
-              child: Icon(Icons.check_rounded, size: 36, color: cs.primary),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Request Sent!',
-              style: Theme.of(context)
-                  .textTheme
-                  .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'The tutor has until ${fmt.format(expiresAt)} to respond.\n'
-              'You can track this request in Sent Requests.',
-              textAlign: TextAlign.center,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyMedium
-                  ?.copyWith(color: cs.onSurfaceVariant),
-            ),
-            const SizedBox(height: 24),
-            FilledButton(
-              onPressed: onViewRequests,
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: const Text('View Sent Requests'),
-            ),
-            const SizedBox(height: 8),
-            OutlinedButton(
-              onPressed: onDone,
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(48),
-              ),
-              child: const Text('Done'),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -435,8 +372,10 @@ class _SlotTile extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final start = _fmt(slot.startTime.hour, slot.startTime.minute);
     final end = _fmt(slot.endTime.hour, slot.endTime.minute);
-    final durationMins =
-        slot.endTime.totalMinutes - slot.startTime.totalMinutes;
+    final refDay = DateTime(2000, 1, 1);
+    final durationMins = sessionEndOnDate(refDay, slot.startTime, slot.endTime)
+        .difference(sessionStartOnDate(refDay, slot.startTime))
+        .inMinutes;
     final durationLabel =
         durationMins >= 60 ? '${durationMins ~/ 60}h' : '${durationMins}m';
 

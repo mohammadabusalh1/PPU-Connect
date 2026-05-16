@@ -8,7 +8,7 @@ import 'package:ppu_connect/presentation/pages/reviews/reviews_scope.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/review/review_card.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class MyReviewsPage extends StatelessWidget {
   const MyReviewsPage({super.key});
@@ -46,7 +46,7 @@ class _MyReviewsViewState extends State<_MyReviewsView> {
       appBar: AppBar(title: const Text('Reviews About Me')),
       body: BlocBuilder<ReviewsCubit, ReviewsState>(
         builder: (context, state) {
-          if (state is ReviewsLoading) return _buildSkeleton(context);
+          if (state is ReviewsLoading) return const LoadingIndicator();
           if (state is ReviewsError) {
             return ErrorStateWidget(message: state.message, onRetry: _load);
           }
@@ -73,26 +73,6 @@ class _MyReviewsViewState extends State<_MyReviewsView> {
           }
           return const SizedBox.shrink();
         },
-      ),
-    );
-  }
-
-  Widget _buildSkeleton(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
-          height: 100,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }

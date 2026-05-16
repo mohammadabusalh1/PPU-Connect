@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class LoadingOverlay extends StatelessWidget {
   const LoadingOverlay({
@@ -19,14 +20,7 @@ class LoadingOverlay extends StatelessWidget {
           const Positioned.fill(
             child: ColoredBox(
               color: Colors.black26,
-              child: Center(
-                child: Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(24),
-                    child: CircularProgressIndicator(),
-                  ),
-                ),
-              ),
+              child: LoadingIndicator(),
             ),
           ),
       ],

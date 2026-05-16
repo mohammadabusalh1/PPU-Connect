@@ -8,7 +8,6 @@ import 'package:ppu_connect/presentation/cubits/browse_tutors/browse_tutors_cubi
 import 'package:ppu_connect/presentation/cubits/profile_setup/profile_setup_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment_requests_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/profile/profile_cubit.dart';
-import 'package:ppu_connect/presentation/cubits/notifications/notifications_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/schedule/schedule_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/tutor_availability/tutor_availability_cubit.dart';
 import 'package:ppu_connect/presentation/pages/auth/forgot_password_page.dart';
@@ -20,7 +19,12 @@ import 'package:ppu_connect/presentation/pages/discover/browse_tutoring_requests
 import 'package:ppu_connect/presentation/pages/discover/discover_page.dart';
 import 'package:ppu_connect/presentation/pages/discover/tutor_detail_page.dart';
 import 'package:ppu_connect/presentation/pages/history/history_page.dart';
+import 'package:ppu_connect/presentation/pages/history/session_detail_page.dart';
+import 'package:ppu_connect/presentation/navigation/appointment_routes.dart';
+import 'package:ppu_connect/presentation/navigation/shell_tab_reselect_notifier.dart';
+import 'package:ppu_connect/presentation/widgets/schedule/schedule_scope_listener.dart';
 import 'package:ppu_connect/presentation/pages/notifications/notifications_page.dart';
+import 'package:ppu_connect/presentation/pages/payments/payment_detail_page.dart';
 import 'package:ppu_connect/presentation/pages/payments/payment_history_page.dart';
 import 'package:ppu_connect/presentation/pages/profile/edit_profile_page.dart';
 import 'package:ppu_connect/presentation/pages/profile/my_profile_page.dart';
@@ -54,6 +58,7 @@ final _discoverShellKey = GlobalKey<NavigatorState>();
 final _scheduleShellKey = GlobalKey<NavigatorState>();
 final _historyShellKey = GlobalKey<NavigatorState>();
 final _profileShellKey = GlobalKey<NavigatorState>();
+final _shellTabReselectNotifier = ShellTabReselectNotifier();
 
 GoRouter createRouter(AuthBloc authBloc) {
   return GoRouter(
@@ -84,9 +89,9 @@ GoRouter createRouter(AuthBloc authBloc) {
         if (needsOnboarding && state.matchedLocation != '/onboarding') {
           return '/onboarding';
         }
-        if (user.role == UserRole.tutor &&
+        if ((user.role == UserRole.tutor || user.role == UserRole.both) &&
             state.matchedLocation == '/requests/sent') {
-          return '/schedule';
+          return user.role == UserRole.both ? null : '/schedule';
         }
         if (isOnAuthRoute) return '/discover';
         if (state.matchedLocation == '/') return '/discover';
@@ -119,18 +124,17 @@ GoRouter createRouter(AuthBloc authBloc) {
         builder: (_, __, shell) => MultiBlocProvider(
           providers: [
             BlocProvider(create: (_) => getIt<ProfileCubit>()),
-            BlocProvider(
-              create: (ctx) {
-                final authState = ctx.read<AuthBloc>().state;
-                final cubit = getIt<NotificationsCubit>();
-                if (authState is AuthAuthenticated) {
-                  cubit.watch(authState.user.id);
-                }
-                return cubit;
-              },
-            ),
+            BlocProvider(create: (_) => getIt<ScheduleCubit>()),
           ],
-          child: MainShellPage(navigationShell: shell),
+          child: ScheduleScopeListener(
+            child: ShellTabReselectScope(
+              notifier: _shellTabReselectNotifier,
+              child: MainShellPage(
+                navigationShell: shell,
+                tabReselectNotifier: _shellTabReselectNotifier,
+              ),
+            ),
+          ),
         ),
         branches: [
           // Branch 0 — Discover (seekers) / Requests (tutors)
@@ -175,32 +179,8 @@ GoRouter createRouter(AuthBloc authBloc) {
             routes: [
               GoRoute(
                 path: '/schedule',
-                builder: (_, __) => BlocProvider(
-                  create: (_) => getIt<ScheduleCubit>(),
-                  child: const SchedulePage(),
-                ),
-                routes: [
-                  GoRoute(
-                    path: 'appointments/:id',
-                    builder: (_, state) => AppointmentDetailPage(
-                      appointmentId: state.pathParameters['id']!,
-                    ),
-                    routes: [
-                      GoRoute(
-                        path: 'cancel',
-                        builder: (_, state) => CancelAppointmentPage(
-                          appointmentId: state.pathParameters['id']!,
-                        ),
-                      ),
-                      GoRoute(
-                        path: 'confirm',
-                        builder: (_, state) => SessionConfirmationPage(
-                          appointmentId: state.pathParameters['id']!,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+                builder: (_, __) => const SchedulePage(),
+                routes: _appointmentRoutesForScope(AppointmentRouteScope.schedule),
               ),
             ],
           ),
@@ -210,10 +190,17 @@ GoRouter createRouter(AuthBloc authBloc) {
             routes: [
               GoRoute(
                 path: '/history',
-                builder: (_, __) => BlocProvider(
-                  create: (_) => getIt<ScheduleCubit>(),
-                  child: const HistoryPage(),
-                ),
+                builder: (_, __) => const HistoryPage(),
+                routes: [
+                  ..._appointmentRoutesForScope(AppointmentRouteScope.history),
+                  GoRoute(
+                    path: 'sessions/:appointmentId',
+                    builder: (_, state) => SessionDetailPage(
+                      appointmentId: state.pathParameters['appointmentId']!,
+                      routeScope: AppointmentRouteScope.history,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -272,7 +259,12 @@ GoRouter createRouter(AuthBloc authBloc) {
         parentNavigatorKey: _rootNavigatorKey,
         path: '/requests/create',
         builder: (_, state) {
-          final tutorId = state.uri.queryParameters['tutorId'] ?? '';
+          final tutorId = state.uri.queryParameters['tutorId']?.trim() ?? '';
+          if (tutorId.isEmpty) {
+            return const Scaffold(
+              body: Center(child: Text('Missing tutor. Go back and try again.')),
+            );
+          }
           return MultiBlocProvider(
             providers: [
               BlocProvider(create: (_) => getIt<AppointmentRequestsCubit>()),
@@ -281,7 +273,10 @@ GoRouter createRouter(AuthBloc authBloc) {
                     getIt<TutorAvailabilityCubit>()..load(tutorId),
               ),
             ],
-            child: CreateRequestPage(tutorId: tutorId),
+            child: CreateRequestPage(
+              tutorId: tutorId,
+              tutorName: state.uri.queryParameters['tutorName'] ?? 'Tutor',
+            ),
           );
         },
       ),
@@ -325,6 +320,12 @@ GoRouter createRouter(AuthBloc authBloc) {
         path: '/payments',
         builder: (_, __) => const PaymentHistoryPage(),
       ),
+      GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
+        path: '/payments/:id',
+        builder: (_, state) =>
+            PaymentDetailPage(paymentId: state.pathParameters['id']!),
+      ),
 
       // ── Reports (root navigator — pushed from profile shell tab) ─────────────
       GoRoute(
@@ -366,6 +367,32 @@ GoRouter createRouter(AuthBloc authBloc) {
     ],
   );
 }
+
+List<RouteBase> _appointmentRoutesForScope(AppointmentRouteScope scope) => [
+      GoRoute(
+        path: 'appointments/:id',
+        builder: (_, state) => AppointmentDetailPage(
+          appointmentId: state.pathParameters['id']!,
+          routeScope: scope,
+        ),
+        routes: [
+          GoRoute(
+            path: 'cancel',
+            builder: (_, state) => CancelAppointmentPage(
+              appointmentId: state.pathParameters['id']!,
+              successLocation: scope.basePath,
+            ),
+          ),
+          GoRoute(
+            path: 'confirm',
+            builder: (_, state) => SessionConfirmationPage(
+              appointmentId: state.pathParameters['id']!,
+              successLocation: scope.basePath,
+            ),
+          ),
+        ],
+      ),
+    ];
 
 class _AuthStateListenable extends ChangeNotifier {
   _AuthStateListenable(this._bloc) {

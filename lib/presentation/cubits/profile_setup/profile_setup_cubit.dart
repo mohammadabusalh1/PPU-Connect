@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
 import 'package:ppu_connect/domain/entities/tutor_profile.dart';
@@ -17,7 +18,8 @@ class ProfileSetupCubit extends Cubit<ProfileSetupState> {
   final TutorProfileRepository _tutorRepo;
 
   void nextStep() {
-    if (state.currentStep < ProfileSetupState.totalSteps - 1) {
+    // Guard uses the computed totalSteps so it always matches the actual page count.
+    if (state.currentStep < state.totalSteps - 1) {
       emit(state.copyWith(currentStep: state.currentStep + 1));
     }
   }
@@ -44,11 +46,14 @@ class ProfileSetupCubit extends Cubit<ProfileSetupState> {
     String? major,
     AcademicLevel? academicLevel,
     double? gpa,
+    // Pass clearGpa: true when the user explicitly blanked the GPA field.
+    bool clearGpa = false,
   }) {
     emit(state.copyWith(
       major: major ?? state.major,
       academicLevel: academicLevel ?? state.academicLevel,
-      gpa: gpa ?? state.gpa,
+      gpa: gpa,
+      clearGpa: clearGpa,
     ));
   }
 
@@ -58,11 +63,13 @@ class ProfileSetupCubit extends Cubit<ProfileSetupState> {
     List<String>? subjects,
     double? hourlyRate,
     String? bio,
+    bool clearBio = false,
   }) {
     emit(state.copyWith(
       subjects: subjects ?? state.subjects,
       hourlyRate: hourlyRate ?? state.hourlyRate,
-      bio: bio ?? state.bio,
+      bio: bio,
+      clearBio: clearBio || (bio == null && subjects == null && hourlyRate == null),
     ));
   }
 
@@ -95,26 +102,39 @@ class ProfileSetupCubit extends Cubit<ProfileSetupState> {
       await _userRepo.updateUser(user);
 
       if (state.role != UserRole.seeker) {
-        final profile = TutorProfile(
-          userId: userId,
-          bio: state.bio,
-          subjects: state.subjects,
-          hourlyRate: state.hourlyRate,
-          currency: 'ILS',
-          averageRating: 0,
-          totalReviews: 0,
-          completedSessions: 0,
-          isAcceptingRequests: true,
-          weeklySlots: const [],
-          createdAt: now,
-          updatedAt: now,
-        );
-        await _tutorRepo.createProfile(profile);
+        try {
+          final profile = TutorProfile(
+            userId: userId,
+            bio: state.bio,
+            subjects: state.subjects,
+            hourlyRate: state.hourlyRate,
+            currency: 'ILS',
+            averageRating: 0,
+            totalReviews: 0,
+            completedSessions: 0,
+            isAcceptingRequests: true,
+            weeklySlots: const [],
+            createdAt: now,
+            updatedAt: now,
+          );
+          await _tutorRepo.createProfile(profile);
+        } catch (tutorError) {
+          debugPrint('[ProfileSetupCubit] TutorProfile creation failed: $tutorError');
+          // Roll back: revert the user to seeker so they can retry onboarding.
+          await _userRepo.updateUser(user.copyWith(role: UserRole.seeker));
+          if (isClosed) return;
+          emit(state.copyWith(
+            isSaving: false,
+            error: 'Failed to create tutor profile. Please try again.',
+          ));
+          return;
+        }
       }
 
       if (isClosed) return;
       emit(state.copyWith(isSaving: false, isDone: true));
     } catch (e) {
+      debugPrint('[ProfileSetupCubit] save error: $e');
       if (isClosed) return;
       emit(state.copyWith(
         isSaving: false,

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ppu_connect/domain/enums/enums.dart';
 
 abstract final class AppColors {
   // Brand
@@ -27,6 +28,13 @@ abstract final class AppColors {
   static const held = Color(0xFFF57F17);
   static const released = Color(0xFF2E7D32);
   static const refunded = Color(0xFF1565C0);
+
+  static Color accentForStatus(AppointmentStatus s) => switch (s) {
+        AppointmentStatus.confirmed => confirmed,
+        AppointmentStatus.cancelled => cancelled,
+        AppointmentStatus.completed => completed,
+        AppointmentStatus.expired => expired,
+      };
 
   // Accent
   static const gold = Color(0xFFF5C518);

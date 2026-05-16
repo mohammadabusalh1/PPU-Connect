@@ -28,6 +28,8 @@ mixin _$AppointmentRequestModel {
   String get senderName => throw _privateConstructorUsedError;
   String? get senderAvatarUrl => throw _privateConstructorUsedError;
   String get receiverId => throw _privateConstructorUsedError;
+  String? get receiverName => throw _privateConstructorUsedError;
+  String? get receiverAvatarUrl => throw _privateConstructorUsedError;
   String get tutorId => throw _privateConstructorUsedError;
   String get seekerId => throw _privateConstructorUsedError;
   String get subject => throw _privateConstructorUsedError;
@@ -69,6 +71,8 @@ abstract class $AppointmentRequestModelCopyWith<$Res> {
     String senderName,
     String? senderAvatarUrl,
     String receiverId,
+    String? receiverName,
+    String? receiverAvatarUrl,
     String tutorId,
     String seekerId,
     String subject,
@@ -106,6 +110,8 @@ class _$AppointmentRequestModelCopyWithImpl<
     Object? senderName = null,
     Object? senderAvatarUrl = freezed,
     Object? receiverId = null,
+    Object? receiverName = freezed,
+    Object? receiverAvatarUrl = freezed,
     Object? tutorId = null,
     Object? seekerId = null,
     Object? subject = null,
@@ -140,6 +146,14 @@ class _$AppointmentRequestModelCopyWithImpl<
                 ? _value.receiverId
                 : receiverId // ignore: cast_nullable_to_non_nullable
                       as String,
+            receiverName: freezed == receiverName
+                ? _value.receiverName
+                : receiverName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            receiverAvatarUrl: freezed == receiverAvatarUrl
+                ? _value.receiverAvatarUrl
+                : receiverAvatarUrl // ignore: cast_nullable_to_non_nullable
+                      as String?,
             tutorId: null == tutorId
                 ? _value.tutorId
                 : tutorId // ignore: cast_nullable_to_non_nullable
@@ -205,6 +219,8 @@ abstract class _$$AppointmentRequestModelImplCopyWith<$Res>
     String senderName,
     String? senderAvatarUrl,
     String receiverId,
+    String? receiverName,
+    String? receiverAvatarUrl,
     String tutorId,
     String seekerId,
     String subject,
@@ -242,6 +258,8 @@ class __$$AppointmentRequestModelImplCopyWithImpl<$Res>
     Object? senderName = null,
     Object? senderAvatarUrl = freezed,
     Object? receiverId = null,
+    Object? receiverName = freezed,
+    Object? receiverAvatarUrl = freezed,
     Object? tutorId = null,
     Object? seekerId = null,
     Object? subject = null,
@@ -276,6 +294,14 @@ class __$$AppointmentRequestModelImplCopyWithImpl<$Res>
             ? _value.receiverId
             : receiverId // ignore: cast_nullable_to_non_nullable
                   as String,
+        receiverName: freezed == receiverName
+            ? _value.receiverName
+            : receiverName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        receiverAvatarUrl: freezed == receiverAvatarUrl
+            ? _value.receiverAvatarUrl
+            : receiverAvatarUrl // ignore: cast_nullable_to_non_nullable
+                  as String?,
         tutorId: null == tutorId
             ? _value.tutorId
             : tutorId // ignore: cast_nullable_to_non_nullable
@@ -334,6 +360,8 @@ class _$AppointmentRequestModelImpl implements _AppointmentRequestModel {
     required this.senderName,
     this.senderAvatarUrl,
     required this.receiverId,
+    this.receiverName,
+    this.receiverAvatarUrl,
     required this.tutorId,
     required this.seekerId,
     required this.subject,
@@ -360,6 +388,10 @@ class _$AppointmentRequestModelImpl implements _AppointmentRequestModel {
   final String? senderAvatarUrl;
   @override
   final String receiverId;
+  @override
+  final String? receiverName;
+  @override
+  final String? receiverAvatarUrl;
   @override
   final String tutorId;
   @override
@@ -391,7 +423,7 @@ class _$AppointmentRequestModelImpl implements _AppointmentRequestModel {
 
   @override
   String toString() {
-    return 'AppointmentRequestModel(id: $id, senderId: $senderId, senderName: $senderName, senderAvatarUrl: $senderAvatarUrl, receiverId: $receiverId, tutorId: $tutorId, seekerId: $seekerId, subject: $subject, note: $note, proposedStartAt: $proposedStartAt, proposedEndAt: $proposedEndAt, status: $status, linkedTutoringRequestId: $linkedTutoringRequestId, expiresAt: $expiresAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'AppointmentRequestModel(id: $id, senderId: $senderId, senderName: $senderName, senderAvatarUrl: $senderAvatarUrl, receiverId: $receiverId, receiverName: $receiverName, receiverAvatarUrl: $receiverAvatarUrl, tutorId: $tutorId, seekerId: $seekerId, subject: $subject, note: $note, proposedStartAt: $proposedStartAt, proposedEndAt: $proposedEndAt, status: $status, linkedTutoringRequestId: $linkedTutoringRequestId, expiresAt: $expiresAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -408,6 +440,10 @@ class _$AppointmentRequestModelImpl implements _AppointmentRequestModel {
                 other.senderAvatarUrl == senderAvatarUrl) &&
             (identical(other.receiverId, receiverId) ||
                 other.receiverId == receiverId) &&
+            (identical(other.receiverName, receiverName) ||
+                other.receiverName == receiverName) &&
+            (identical(other.receiverAvatarUrl, receiverAvatarUrl) ||
+                other.receiverAvatarUrl == receiverAvatarUrl) &&
             (identical(other.tutorId, tutorId) || other.tutorId == tutorId) &&
             (identical(other.seekerId, seekerId) ||
                 other.seekerId == seekerId) &&
@@ -440,6 +476,8 @@ class _$AppointmentRequestModelImpl implements _AppointmentRequestModel {
     senderName,
     senderAvatarUrl,
     receiverId,
+    receiverName,
+    receiverAvatarUrl,
     tutorId,
     seekerId,
     subject,
@@ -477,6 +515,8 @@ abstract class _AppointmentRequestModel implements AppointmentRequestModel {
     required final String senderName,
     final String? senderAvatarUrl,
     required final String receiverId,
+    final String? receiverName,
+    final String? receiverAvatarUrl,
     required final String tutorId,
     required final String seekerId,
     required final String subject,
@@ -503,6 +543,10 @@ abstract class _AppointmentRequestModel implements AppointmentRequestModel {
   String? get senderAvatarUrl;
   @override
   String get receiverId;
+  @override
+  String? get receiverName;
+  @override
+  String? get receiverAvatarUrl;
   @override
   String get tutorId;
   @override

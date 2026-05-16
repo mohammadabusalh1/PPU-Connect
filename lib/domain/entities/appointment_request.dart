@@ -12,6 +12,8 @@ class AppointmentRequest with _$AppointmentRequest {
     required String senderName,
     String? senderAvatarUrl,
     required String receiverId,
+    String? receiverName,
+    String? receiverAvatarUrl,
     required String tutorId,
     required String seekerId,
     required String subject,

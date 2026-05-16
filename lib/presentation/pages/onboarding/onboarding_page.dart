@@ -27,6 +27,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
   final _bioCtrl = TextEditingController();
   final _subjectCtrl = TextEditingController();
 
+  // Prevents rapid-tap from advancing past the active step while the page
+  // controller animation is still in progress (300 ms).
+  bool _navigating = false;
+
   @override
   void dispose() {
     _pageController.dispose();
@@ -39,20 +43,26 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _next() {
+    if (_navigating) return;
     FocusManager.instance.primaryFocus?.unfocus();
     final cubit = context.read<ProfileSetupCubit>();
     switch (cubit.state.currentStep) {
       case 0:
+        _lockNavigation();
         cubit.nextStep();
         _goToPage(1);
 
       case 1:
         if (!(_academicFormKey.currentState?.validate() ?? false)) return;
+        final parsedGpa = double.tryParse(_gpaCtrl.text.trim());
         cubit.updateAcademicInfo(
           major: _majorCtrl.text.trim(),
-          gpa: double.tryParse(_gpaCtrl.text.trim()),
+          gpa: parsedGpa,
+          // Explicitly clear stored GPA when the user blanked the field.
+          clearGpa: parsedGpa == null,
         );
         if (cubit.state.showTutorSteps) {
+          _lockNavigation();
           cubit.nextStep();
           _goToPage(2);
         } else {
@@ -75,6 +85,14 @@ class _OnboardingPageState extends State<OnboardingPage> {
         );
         _doSave();
     }
+  }
+
+  /// Blocks re-entry into _next() for the duration of the page animation.
+  void _lockNavigation() {
+    _navigating = true;
+    Future.delayed(const Duration(milliseconds: 350), () {
+      _navigating = false;
+    });
   }
 
   void _back() {
@@ -123,7 +141,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   String _continueLabel(int step, bool showTutor) {
-    final isLast = (step == 1 && !showTutor) || (step == 2 && showTutor);
+    final isLast = step == (showTutor ? 2 : 1);
     return isLast ? 'Get Started' : 'Continue';
   }
 
@@ -210,7 +228,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
             child: PrimaryButton(
               label: _continueLabel(state.currentStep, state.showTutorSteps),
               loading: state.isSaving,
-              onPressed: state.currentStep == 0 ? _next : _next,
+              onPressed: _next,
             ),
           ),
         );
@@ -624,7 +642,7 @@ class _TutorStep extends StatelessWidget {
               hint: 'Tell students about your experience and teaching style…',
               controller: bioCtrl,
               maxLines: 4,
-              maxLength: 300,
+              maxLength: 500, // matches BioValidator.length() limit
             ),
 
             // Subject validation hint
@@ -644,7 +662,7 @@ class _TutorStep extends StatelessWidget {
 
   void _addSubject(BuildContext context) {
     final s = subjectCtrl.text.trim();
-    if (s.isNotEmpty) {
+    if (s.isNotEmpty && !subjects.contains(s)) {
       onAddSubject(s);
       subjectCtrl.clear();
     }

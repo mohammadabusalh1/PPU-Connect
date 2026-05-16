@@ -7,10 +7,20 @@ import 'package:ppu_connect/domain/enums/enums.dart';
 
 abstract interface class AppointmentRemoteDataSource {
   Future<AppointmentRequestModel> sendRequest(AppointmentRequestModel request);
-  Future<void> acceptAppointmentRequest({
+  Future<String> acceptAppointmentRequest({
     required AppointmentRequestModel request,
-    required double hourlyRate,
-    required String currency,
+    required String tutorName,
+  });
+  Future<bool> hasConflictingActiveRequestForTutor({
+    required String tutorId,
+    required DateTime proposedStartAt,
+    required DateTime proposedEndAt,
+    String? excludeRequestId,
+  });
+  Future<bool> hasConflictingConfirmedAppointmentForUser({
+    required String userId,
+    required DateTime proposedStartAt,
+    required DateTime proposedEndAt,
   });
   Future<void> updateRequestStatus(String id, RequestStatus status, {String? reason});
   Future<AppointmentRequestModel?> getRequest(String id);
@@ -53,10 +63,9 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
   }
 
   @override
-  Future<void> acceptAppointmentRequest({
+  Future<String> acceptAppointmentRequest({
     required AppointmentRequestModel request,
-    required double hourlyRate,
-    required String currency,
+    required String tutorName,
   }) async {
     if (request.id.isEmpty) {
       throw Exception('Invalid request id');
@@ -85,12 +94,27 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       }
     }
 
-    final durationHours = request.proposedEndAt
-            .difference(request.proposedStartAt)
-            .inMinutes /
-        60.0;
-    final amount = (hourlyRate * durationHours).clamp(0, double.infinity);
+    final conflictingRequest = await hasConflictingActiveRequestForTutor(
+      tutorId: request.tutorId,
+      proposedStartAt: request.proposedStartAt.toUtc(),
+      proposedEndAt: request.proposedEndAt.toUtc(),
+      excludeRequestId: request.id,
+    );
+    if (conflictingRequest) {
+      throw Exception('Another request already holds this time slot');
+    }
 
+    final paymentSnap = await _firestore
+        .collection('payments')
+        .where('requestId', isEqualTo: request.id)
+        .limit(1)
+        .get();
+    if (paymentSnap.docs.isEmpty) {
+      throw Exception('Payment not found for request');
+    }
+    final existingPaymentRef = paymentSnap.docs.first.reference;
+
+    final appointmentRef = _appointments.doc();
     await _firestore.runTransaction((txn) async {
       final reqRef = _requests.doc(request.id);
       final reqSnap = await txn.get(reqRef);
@@ -103,8 +127,6 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         throw Exception('This request is no longer pending');
       }
 
-      final appointmentRef = _appointments.doc();
-      final paymentRef = _firestore.collection('payments').doc();
       final sessionRef =
           _firestore.collection('sessionConfirmations').doc(appointmentRef.id);
 
@@ -112,7 +134,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         'appointmentRequestId': request.id,
         'tutorId': request.tutorId,
         'seekerId': request.seekerId,
-        'tutorName': null,
+        'tutorName': tutorName,
         'seekerName': request.senderName,
         'subject': request.subject,
         'startAt': Timestamp.fromDate(request.proposedStartAt.toUtc()),
@@ -122,14 +144,8 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
-      txn.set(paymentRef, {
+      txn.update(existingPaymentRef, {
         'appointmentId': appointmentRef.id,
-        'tutorId': request.tutorId,
-        'seekerId': request.seekerId,
-        'amount': amount,
-        'currency': currency,
-        'status': PaymentStatus.held.name,
-        'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
 
@@ -144,6 +160,8 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
         'updatedAt': FieldValue.serverTimestamp(),
       });
     });
+
+    return appointmentRef.id;
   }
 
   @override
@@ -273,6 +291,60 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       final start =
           (data['proposedStartAt'] as Timestamp).toDate().toUtc();
       final end = (data['proposedEndAt'] as Timestamp).toDate().toUtc();
+      if (proposedStartAt.isBefore(end) && proposedEndAt.isAfter(start)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @override
+  Future<bool> hasConflictingActiveRequestForTutor({
+    required String tutorId,
+    required DateTime proposedStartAt,
+    required DateTime proposedEndAt,
+    String? excludeRequestId,
+  }) async {
+    final snap = await _requests.where('receiverId', isEqualTo: tutorId).get();
+
+    for (final doc in snap.docs) {
+      if (excludeRequestId != null && doc.id == excludeRequestId) continue;
+      final data = doc.data();
+      final status = data['status'] as String?;
+      if (status != RequestStatus.pending.name &&
+          status != RequestStatus.accepted.name) {
+        continue;
+      }
+      final expiresAt = (data['expiresAt'] as Timestamp).toDate().toUtc();
+      if (status == RequestStatus.pending.name &&
+          DateTime.now().toUtc().isAfter(expiresAt)) {
+        continue;
+      }
+      final start =
+          (data['proposedStartAt'] as Timestamp).toDate().toUtc();
+      final end = (data['proposedEndAt'] as Timestamp).toDate().toUtc();
+      if (proposedStartAt.isBefore(end) && proposedEndAt.isAfter(start)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @override
+  Future<bool> hasConflictingConfirmedAppointmentForUser({
+    required String userId,
+    required DateTime proposedStartAt,
+    required DateTime proposedEndAt,
+  }) async {
+    final snap = await _appointments
+        .where('seekerId', isEqualTo: userId)
+        .where('status', isEqualTo: AppointmentStatus.confirmed.name)
+        .get();
+
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final start = (data['startAt'] as Timestamp).toDate().toUtc();
+      final end = (data['endAt'] as Timestamp).toDate().toUtc();
       if (proposedStartAt.isBefore(end) && proposedEndAt.isAfter(start)) {
         return true;
       }

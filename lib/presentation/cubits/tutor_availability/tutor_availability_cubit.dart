@@ -1,6 +1,9 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injectable/injectable.dart';
+import 'package:ppu_connect/domain/entities/tutor_profile.dart';
 import 'package:ppu_connect/domain/entities/weekly_slot.dart';
+import 'package:ppu_connect/core/utils/session_schedule_utils.dart';
+import 'package:ppu_connect/core/validators/scheduling_validators.dart';
 import 'package:ppu_connect/domain/repositories/appointment_repository.dart';
 import 'package:ppu_connect/domain/repositories/tutor_profile_repository.dart';
 
@@ -19,7 +22,15 @@ class TutorAvailabilityCubit extends Cubit<TutorAvailabilityState> {
     try {
       final profile = await _repo.getProfile(tutorId);
       if (isClosed) return;
-      final slots = profile?.weeklySlots.where((s) => s.isActive).toList() ?? [];
+      if (profile == null) {
+        emit(const TutorAvailabilityError('Tutor profile not found'));
+        return;
+      }
+      final slots = profile.weeklySlots
+          .where(
+            (s) => s.isActive && WeeklySlotValidator.validateSlot(s) == null,
+          )
+          .toList();
 
       final now = DateTime.now().toUtc();
       final confirmed = await _appointmentRepo.getConfirmedAppointmentsForTutor(
@@ -30,22 +41,23 @@ class TutorAvailabilityCubit extends Cubit<TutorAvailabilityState> {
 
       final bookedDates = <String, Set<DateTime>>{};
       for (final appt in confirmed) {
+        final apptStartLocal = appt.startAt.toLocal();
+        final apptEndLocal = appt.endAt.toLocal();
         final apptDate = DateTime(
-          appt.startAt.year,
-          appt.startAt.month,
-          appt.startAt.day,
+          apptStartLocal.year,
+          apptStartLocal.month,
+          apptStartLocal.day,
         );
         for (final slot in slots) {
-          if (slot.dayOfWeek != appt.startAt.toLocal().weekday) continue;
-          final slotStart = DateTime(
-            apptDate.year, apptDate.month, apptDate.day,
-            slot.startTime.hour, slot.startTime.minute,
+          if (slot.dayOfWeek != apptStartLocal.weekday) continue;
+          final slotStart = sessionStartOnDate(apptDate, slot.startTime);
+          final slotEnd = sessionEndOnDate(
+            apptDate,
+            slot.startTime,
+            slot.endTime,
           );
-          final slotEnd = DateTime(
-            apptDate.year, apptDate.month, apptDate.day,
-            slot.endTime.hour, slot.endTime.minute,
-          );
-          if (appt.startAt.isBefore(slotEnd) && appt.endAt.isAfter(slotStart)) {
+          if (apptStartLocal.isBefore(slotEnd) &&
+              apptEndLocal.isAfter(slotStart)) {
             final key =
                 '${slot.dayOfWeek}_${slot.startTime.hour}_${slot.startTime.minute}';
             bookedDates.putIfAbsent(key, () => {}).add(apptDate);
@@ -54,7 +66,7 @@ class TutorAvailabilityCubit extends Cubit<TutorAvailabilityState> {
       }
 
       if (isClosed) return;
-      emit(TutorAvailabilityLoaded(slots, bookedDates));
+      emit(TutorAvailabilityLoaded(slots, bookedDates, profile));
     } catch (e) {
       if (isClosed) return;
       emit(TutorAvailabilityError(e.toString().replaceFirst('Exception: ', '')));

@@ -21,4 +21,11 @@ abstract final class RequestNotesValidator {
     if (v.length > 1000) return 'Notes must be 1,000 characters or fewer';
     return null;
   }
+
+  /// Appointment request notes (MODELS.md: max 500 chars).
+  static String? optionalForAppointment(String? v) {
+    if (v == null || v.isEmpty) return null;
+    if (v.length > 500) return 'Note must be 500 characters or fewer';
+    return null;
+  }
 }

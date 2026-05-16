@@ -24,4 +24,42 @@ class PaymentRepositoryImpl implements PaymentRepository {
   @override
   Stream<List<Payment>> watchPaymentsForUser(String userId) =>
       _ds.watchPaymentsForUser(userId).map((list) => list.map((m) => m.toEntity()).toList());
+
+  @override
+  Future<Payment> createForRequest({
+    required String requestId,
+    required String tutorId,
+    required String seekerId,
+    required double amount,
+    required String currency,
+    required String cardLast4,
+    required String cardBrand,
+  }) async {
+    final m = await _ds.createForRequest(
+      requestId: requestId,
+      tutorId: tutorId,
+      seekerId: seekerId,
+      amount: amount,
+      currency: currency,
+      cardLast4: cardLast4,
+      cardBrand: cardBrand,
+    );
+    return m.toEntity();
+  }
+
+  @override
+  Future<Payment?> getPaymentForRequest(String requestId) async {
+    final m = await _ds.getPaymentForRequest(requestId);
+    return m?.toEntity();
+  }
+
+  @override
+  Future<Payment?> getPaymentById(String paymentId) async {
+    final m = await _ds.getPaymentById(paymentId);
+    return m?.toEntity();
+  }
+
+  @override
+  Future<void> requestRefund(String paymentId, {required String reason}) =>
+      _ds.requestRefund(paymentId, reason: reason);
 }

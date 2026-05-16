@@ -13,8 +13,9 @@ class TutorAvailabilityLoading extends TutorAvailabilityState {
 }
 
 class TutorAvailabilityLoaded extends TutorAvailabilityState {
-  const TutorAvailabilityLoaded(this.slots, this.bookedDates);
+  const TutorAvailabilityLoaded(this.slots, this.bookedDates, this.tutorProfile);
   final List<WeeklySlot> slots;
+  final TutorProfile tutorProfile;
 
   /// Key: '${slot.dayOfWeek}_${slot.startTime.hour}_${slot.startTime.minute}'
   /// Value: set of date-only DateTimes (year/month/day) that are fully booked.

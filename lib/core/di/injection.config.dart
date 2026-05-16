@@ -93,6 +93,8 @@ import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment
     as _i77;
 import 'package:ppu_connect/presentation/cubits/browse_tutors/browse_tutors_cubit.dart'
     as _i1018;
+import 'package:ppu_connect/presentation/cubits/checkout/checkout_cubit.dart'
+    as _i528;
 import 'package:ppu_connect/presentation/cubits/notifications/notifications_cubit.dart'
     as _i549;
 import 'package:ppu_connect/presentation/cubits/payments/payments_cubit.dart'
@@ -226,13 +228,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i82.TutorProfileRemoteDataSource>(),
       ),
     );
-    gh.factory<_i161.AppointmentRepository>(
-      () => _i845.AppointmentRepositoryImpl(
-        gh<_i801.AppointmentRemoteDataSource>(),
-        gh<_i876.TutorProfileRepository>(),
-        gh<_i915.NotificationRemoteDataSource>(),
-      ),
-    );
     gh.factory<_i509.AuthBloc>(
       () => _i509.AuthBloc(
         gh<_i246.WatchAuthState>(),
@@ -242,12 +237,6 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i103.SendPasswordReset>(),
         gh<_i724.SignInWithGoogle>(),
       ),
-    );
-    gh.factory<_i77.AppointmentRequestsCubit>(
-      () => _i77.AppointmentRequestsCubit(gh<_i161.AppointmentRepository>()),
-    );
-    gh.factory<_i979.ScheduleCubit>(
-      () => _i979.ScheduleCubit(gh<_i161.AppointmentRepository>()),
     );
     gh.factory<_i1018.BrowseTutorsCubit>(
       () => _i1018.BrowseTutorsCubit(
@@ -275,6 +264,20 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i1032.ReviewsCubit>(
       () => _i1032.ReviewsCubit(gh<_i139.ReviewRepository>()),
     );
+    gh.factory<_i161.AppointmentRepository>(
+      () => _i845.AppointmentRepositoryImpl(
+        gh<_i801.AppointmentRemoteDataSource>(),
+        gh<_i876.TutorProfileRepository>(),
+        gh<_i263.UserRepository>(),
+        gh<_i301.NotificationRepository>(),
+      ),
+    );
+    gh.factory<_i528.CheckoutCubit>(
+      () => _i528.CheckoutCubit(
+        gh<_i161.AppointmentRepository>(),
+        gh<_i150.PaymentRepository>(),
+      ),
+    );
     gh.factory<_i76.ReportsCubit>(
       () => _i76.ReportsCubit(gh<_i855.ReportRepository>()),
     );
@@ -283,6 +286,12 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i876.TutorProfileRepository>(),
         gh<_i161.AppointmentRepository>(),
       ),
+    );
+    gh.factory<_i77.AppointmentRequestsCubit>(
+      () => _i77.AppointmentRequestsCubit(gh<_i161.AppointmentRepository>()),
+    );
+    gh.factory<_i979.ScheduleCubit>(
+      () => _i979.ScheduleCubit(gh<_i161.AppointmentRepository>()),
     );
     return this;
   }

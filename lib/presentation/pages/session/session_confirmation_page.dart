@@ -7,9 +7,14 @@ import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/widgets/buttons/primary_button.dart';
 
 class SessionConfirmationPage extends StatefulWidget {
-  const SessionConfirmationPage({super.key, required this.appointmentId});
+  const SessionConfirmationPage({
+    super.key,
+    required this.appointmentId,
+    this.successLocation = '/schedule',
+  });
 
   final String appointmentId;
+  final String successLocation;
 
   @override
   State<SessionConfirmationPage> createState() =>
@@ -36,7 +41,7 @@ class _SessionConfirmationPageState extends State<SessionConfirmationPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Session confirmed!')),
         );
-        context.go('/schedule');
+        context.go(widget.successLocation);
       }
     } catch (e) {
       if (mounted) {

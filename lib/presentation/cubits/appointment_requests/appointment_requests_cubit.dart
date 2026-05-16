@@ -17,6 +17,32 @@ class AppointmentRequestsCubit extends Cubit<AppointmentRequestsState> {
   void watchIncoming(String tutorId) => _watch(_repo.watchIncomingRequests(tutorId));
   void watchSent(String senderId) => _watch(_repo.watchSentRequests(senderId));
 
+  /// Loads [requestId] to decide incoming vs sent stream (fixes [UserRole.both]).
+  Future<void> watchForDetail({
+    required String userId,
+    required String requestId,
+  }) async {
+    emit(const AppointmentRequestsLoading());
+    try {
+      final request = await _repo.getRequest(requestId);
+      if (isClosed) return;
+      if (request == null) {
+        emit(const AppointmentRequestsError('Request not found'));
+        return;
+      }
+      if (request.tutorId == userId) {
+        watchIncoming(userId);
+      } else if (request.seekerId == userId) {
+        watchSent(userId);
+      } else {
+        emit(const AppointmentRequestsError('Request not found'));
+      }
+    } catch (e) {
+      if (isClosed) return;
+      emit(AppointmentRequestsError(_messageFrom(e)));
+    }
+  }
+
   void _watch(Stream<List<AppointmentRequest>> stream) {
     _sub?.cancel();
     emit(const AppointmentRequestsLoading());
@@ -27,7 +53,7 @@ class AppointmentRequestsCubit extends Cubit<AppointmentRequestsState> {
       },
       onError: (e) {
         if (isClosed) return;
-        emit(AppointmentRequestsError(e.toString().replaceFirst('Exception: ', '')));
+        emit(AppointmentRequestsError(_messageFrom(e)));
       },
     );
   }
@@ -37,10 +63,7 @@ class AppointmentRequestsCubit extends Cubit<AppointmentRequestsState> {
       await _repo.acceptRequest(requestId);
       return (ok: true, error: null);
     } catch (e) {
-      return (
-        ok: false,
-        error: e.toString().replaceFirst('Exception: ', ''),
-      );
+      return (ok: false, error: _messageFrom(e));
     }
   }
 
@@ -52,19 +75,18 @@ class AppointmentRequestsCubit extends Cubit<AppointmentRequestsState> {
       await _repo.rejectRequest(requestId, reason: reason);
       return (ok: true, error: null);
     } catch (e) {
-      return (
-        ok: false,
-        error: e.toString().replaceFirst('Exception: ', ''),
-      );
+      return (ok: false, error: _messageFrom(e));
     }
   }
 
-  Future<void> sendRequest(AppointmentRequest request) async {
+  Future<({bool ok, String? error})> sendRequest(
+    AppointmentRequest request,
+  ) async {
     try {
       await _repo.sendRequest(request);
+      return (ok: true, error: null);
     } catch (e) {
-      if (isClosed) return;
-      emit(AppointmentRequestsError(e.toString().replaceFirst('Exception: ', '')));
+      return (ok: false, error: _messageFrom(e));
     }
   }
 
@@ -73,12 +95,12 @@ class AppointmentRequestsCubit extends Cubit<AppointmentRequestsState> {
       await _repo.cancelRequest(requestId);
       return (ok: true, error: null);
     } catch (e) {
-      return (
-        ok: false,
-        error: e.toString().replaceFirst('Exception: ', ''),
-      );
+      return (ok: false, error: _messageFrom(e));
     }
   }
+
+  String _messageFrom(Object e) =>
+      e.toString().replaceFirst('Exception: ', '');
 
   @override
   Future<void> close() {

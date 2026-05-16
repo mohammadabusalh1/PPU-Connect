@@ -10,7 +10,7 @@ import 'package:ppu_connect/presentation/widgets/tutor/rating_stars.dart';
 import 'package:ppu_connect/presentation/widgets/tutor/subject_chip_list.dart';
 import 'package:ppu_connect/presentation/widgets/user/role_badge.dart';
 import 'package:ppu_connect/presentation/widgets/user/user_avatar.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class PublicProfilePage extends StatelessWidget {
   const PublicProfilePage({super.key, required this.userId});
@@ -25,7 +25,7 @@ class PublicProfilePage extends StatelessWidget {
         appBar: AppBar(title: const Text('Profile')),
         body: BlocBuilder<ProfileCubit, ProfileState>(
           builder: (context, state) {
-            if (state is ProfileLoading) return _buildSkeleton(context);
+            if (state is ProfileLoading) return const LoadingIndicator();
             if (state is ProfileError) {
               return ErrorStateWidget(
                 message: state.message,
@@ -92,7 +92,7 @@ class PublicProfilePage extends StatelessWidget {
                           icon: const Icon(Icons.send_rounded),
                           label: const Text('Request Session'),
                           onPressed: () => context.push(
-                              '/requests/create?tutorId=$userId'),
+                              '/requests/create?tutorId=$userId&tutorName=${Uri.encodeComponent(user.displayName)}'),
                         ),
                       ),
                   ],
@@ -134,22 +134,6 @@ class PublicProfilePage extends StatelessWidget {
                   color: Theme.of(context).colorScheme.outline)),
           const SizedBox(height: 8),
           RoleBadge(role: role),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSkeleton(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: Column(
-        children: [
-          const SizedBox(height: 32),
-          const CircleAvatar(radius: 40),
-          const SizedBox(height: 12),
-          Container(height: 20, width: 140, color: Colors.white),
         ],
       ),
     );

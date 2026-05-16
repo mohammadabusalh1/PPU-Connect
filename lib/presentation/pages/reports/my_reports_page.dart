@@ -9,7 +9,7 @@ import 'package:ppu_connect/presentation/cubits/reports/reports_cubit.dart';
 import 'package:ppu_connect/presentation/pages/reports/reports_scope.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class MyReportsPage extends StatelessWidget {
   const MyReportsPage({super.key});
@@ -47,7 +47,7 @@ class _MyReportsViewState extends State<_MyReportsView> {
       appBar: AppBar(title: const Text('My Reports')),
       body: BlocBuilder<ReportsCubit, ReportsState>(
         builder: (context, state) {
-          if (state is ReportsLoading) return _buildSkeleton(context);
+          if (state is ReportsLoading) return const LoadingIndicator();
           if (state is ReportsError) {
             return ErrorStateWidget(message: state.message, onRetry: _load);
           }
@@ -123,24 +123,4 @@ class _MyReportsViewState extends State<_MyReportsView> {
         ReportReason.fakeProfile => 'Fake Profile',
         ReportReason.other => 'Other',
       };
-
-  Widget _buildSkeleton(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 4,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
-  }
 }

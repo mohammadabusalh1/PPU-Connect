@@ -9,7 +9,7 @@ import 'package:ppu_connect/presentation/cubits/payments/payments_cubit.dart';
 import 'package:ppu_connect/presentation/pages/payments/payments_scope.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class PaymentHistoryPage extends StatelessWidget {
   const PaymentHistoryPage({super.key});
@@ -47,7 +47,7 @@ class _PaymentHistoryViewState extends State<_PaymentHistoryView> {
       appBar: AppBar(title: const Text('Payment History')),
       body: BlocBuilder<PaymentsCubit, PaymentsState>(
         builder: (context, state) {
-          if (state is PaymentsLoading) return _buildSkeleton(context);
+          if (state is PaymentsLoading) return const LoadingIndicator();
           if (state is PaymentsError) {
             debugPrint('Payments load error: ${state.message}');
             return ErrorStateWidget(message: state.message, onRetry: _load);
@@ -125,26 +125,6 @@ class _PaymentHistoryViewState extends State<_PaymentHistoryView> {
           }
           return const SizedBox.shrink();
         },
-      ),
-    );
-  }
-
-  Widget _buildSkeleton(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: 5,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
-        itemBuilder: (_, __) => Container(
-          height: 72,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
       ),
     );
   }

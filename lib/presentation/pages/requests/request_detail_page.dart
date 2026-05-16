@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:ppu_connect/domain/enums/enums.dart';
+import 'package:ppu_connect/domain/validators/appointment_request_rules.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment_requests_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
-import 'package:shimmer/shimmer.dart';
+import 'package:ppu_connect/presentation/widgets/feedback/loading_indicator.dart';
 
 class RequestDetailPage extends StatefulWidget {
   const RequestDetailPage({super.key, required this.requestId});
@@ -29,13 +29,10 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
   void _watch() {
     final authState = context.read<AuthBloc>().state;
     if (authState is! AuthAuthenticated) return;
-    final cubit = context.read<AppointmentRequestsCubit>();
-    final role = authState.user.role;
-    if (role == UserRole.tutor || role == UserRole.both) {
-      cubit.watchIncoming(authState.user.id);
-    } else {
-      cubit.watchSent(authState.user.id);
-    }
+    context.read<AppointmentRequestsCubit>().watchForDetail(
+          userId: authState.user.id,
+          requestId: widget.requestId,
+        );
   }
 
   void _showMessage(String message, {bool isError = false}) {
@@ -99,7 +96,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
       body: BlocBuilder<AppointmentRequestsCubit, AppointmentRequestsState>(
         builder: (context, state) {
           if (state is AppointmentRequestsLoading) {
-            return _buildSkeleton(context);
+            return const LoadingIndicator();
           }
           if (state is AppointmentRequestsError) {
             return ErrorStateWidget(message: state.message, onRetry: _watch);
@@ -114,7 +111,14 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
             final authState = context.read<AuthBloc>().state;
             final myId = authState is AuthAuthenticated ? authState.user.id : '';
             final isTutor = req.tutorId == myId;
-            final isPending = req.status == RequestStatus.pending;
+            final canAct = AppointmentRequestRules.isActionableByTutor(
+              req,
+              DateTime.now(),
+            );
+            final canCancel = AppointmentRequestRules.isCancellableBySeeker(
+              req,
+              DateTime.now(),
+            );
             final dateFmt = DateFormat('EEE, MMM d, yyyy · h:mm a');
 
             return ListView(
@@ -128,12 +132,12 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                 _InfoTile(
                   icon: Icons.play_circle_outline,
                   label: 'Proposed Start',
-                  value: dateFmt.format(req.proposedStartAt),
+                  value: dateFmt.format(req.proposedStartAt.toLocal()),
                 ),
                 _InfoTile(
                   icon: Icons.stop_circle_outlined,
                   label: 'Proposed End',
-                  value: dateFmt.format(req.proposedEndAt),
+                  value: dateFmt.format(req.proposedEndAt.toLocal()),
                 ),
                 _InfoTile(
                   icon: Icons.info_outline,
@@ -147,7 +151,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                     value: req.note!,
                   ),
                 const SizedBox(height: 24),
-                if (isTutor && isPending) ...[
+                if (isTutor && canAct) ...[
                   FilledButton.icon(
                     icon: _acting
                         ? const SizedBox(
@@ -168,7 +172,7 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
                     onPressed:
                         _acting ? null : () => _handleReject(req.id),
                   ),
-                ] else if (!isTutor && isPending) ...[
+                ] else if (!isTutor && canCancel) ...[
                   OutlinedButton.icon(
                     icon: const Icon(Icons.cancel_outlined),
                     label: const Text('Cancel Request'),
@@ -182,28 +186,6 @@ class _RequestDetailPageState extends State<RequestDetailPage> {
           }
           return const SizedBox.shrink();
         },
-      ),
-    );
-  }
-
-  Widget _buildSkeleton(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    return Shimmer.fromColors(
-      baseColor: cs.surfaceContainerHighest,
-      highlightColor: cs.surface,
-      child: ListView(
-        padding: const EdgeInsets.all(16),
-        children: List.generate(
-          4,
-          (_) => Container(
-            height: 60,
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
       ),
     );
   }

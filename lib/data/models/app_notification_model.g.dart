@@ -14,7 +14,9 @@ _$AppNotificationModelImpl _$$AppNotificationModelImplFromJson(
   type: const NotificationTypeConverter().fromJson(json['type'] as String),
   title: json['title'] as String,
   body: json['body'] as String,
-  payload: Map<String, String>.from(json['payload'] as Map),
+  payload: json['payload'] == null
+      ? const {}
+      : const StringMapConverter().fromJson(json['payload']),
   isRead: json['isRead'] as bool,
   readAt: const NullableTimestampConverter().fromJson(json['readAt']),
   createdAt: const TimestampConverter().fromJson(json['createdAt']),
@@ -28,7 +30,7 @@ Map<String, dynamic> _$$AppNotificationModelImplToJson(
   'type': const NotificationTypeConverter().toJson(instance.type),
   'title': instance.title,
   'body': instance.body,
-  'payload': instance.payload,
+  'payload': const StringMapConverter().toJson(instance.payload),
   'isRead': instance.isRead,
   'readAt': const NullableTimestampConverter().toJson(instance.readAt),
   'createdAt': const TimestampConverter().toJson(instance.createdAt),

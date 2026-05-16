@@ -13,9 +13,13 @@ final class NotificationsLoading extends NotificationsState {
 }
 
 final class NotificationsLoaded extends NotificationsState {
-  const NotificationsLoaded({required this.notifications});
+  const NotificationsLoaded({
+    required this.notifications,
+    required this.unreadCount,
+  });
+
   final List<AppNotification> notifications;
-  int get unreadCount => notifications.where((n) => !n.isRead).length;
+  final int unreadCount;
 }
 
 final class NotificationsError extends NotificationsState {

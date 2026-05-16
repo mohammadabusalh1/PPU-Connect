@@ -5,10 +5,17 @@ import 'package:ppu_connect/domain/entities/appointment_request.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/widgets/user/user_avatar.dart';
 
+enum RequestCardPerspective { incoming, sent }
+
 class RequestCard extends StatelessWidget {
-  const RequestCard({super.key, required this.request});
+  const RequestCard({
+    super.key,
+    required this.request,
+    this.perspective = RequestCardPerspective.incoming,
+  });
 
   final AppointmentRequest request;
+  final RequestCardPerspective perspective;
 
   @override
   Widget build(BuildContext context) {
@@ -24,6 +31,12 @@ class RequestCard extends StatelessWidget {
       RequestStatus.expired => (cs.outline, 'Expired'),
     };
 
+    final isSent = perspective == RequestCardPerspective.sent;
+    final displayName =
+        isSent ? (request.receiverName ?? 'Tutor') : request.senderName;
+    final displayAvatarUrl =
+        isSent ? request.receiverAvatarUrl : request.senderAvatarUrl;
+
     return Card(
       clipBehavior: Clip.hardEdge,
       child: InkWell(
@@ -38,14 +51,14 @@ class RequestCard extends StatelessWidget {
               Row(
                 children: [
                   UserAvatar(
-                    name: request.senderName,
-                    avatarUrl: request.senderAvatarUrl,
+                    name: displayName,
+                    avatarUrl: displayAvatarUrl,
                     radius: 18,
                   ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      request.senderName,
+                      displayName,
                       style: theme.textTheme.bodyMedium
                           ?.copyWith(fontWeight: FontWeight.w600),
                       maxLines: 1,
@@ -89,7 +102,7 @@ class RequestCard extends StatelessWidget {
                     size: 14, color: cs.outline),
                 const SizedBox(width: 4),
                 Text(
-                  dateFmt.format(request.proposedStartAt),
+                  dateFmt.format(request.proposedStartAt.toLocal()),
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: cs.outline),
                 ),
