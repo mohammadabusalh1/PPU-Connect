@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ppu_connect/domain/entities/tutor_profile.dart';
 import 'package:ppu_connect/domain/entities/user.dart';
+import 'package:ppu_connect/domain/entities/user_display.dart';
 import 'package:ppu_connect/presentation/widgets/tutor/rating_stars.dart';
 import 'package:ppu_connect/presentation/widgets/tutor/subject_chip_list.dart';
 import 'package:ppu_connect/presentation/widgets/user/user_avatar.dart';
@@ -34,7 +35,7 @@ class TutorCard extends StatelessWidget {
               Row(
                 children: [
                   UserAvatar(
-                    name: user.fullName,
+                    name: user.displayName,
                     avatarUrl: user.avatarUrl,
                     radius: 26,
                   ),
@@ -44,7 +45,7 @@ class TutorCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          user.fullName,
+                          user.displayName,
                           style: theme.textTheme.titleSmall?.copyWith(
                             fontWeight: FontWeight.w600,
                           ),

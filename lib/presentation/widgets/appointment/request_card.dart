@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:ppu_connect/domain/entities/appointment_request.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
+import 'package:ppu_connect/presentation/widgets/user/user_avatar.dart';
 
 class RequestCard extends StatelessWidget {
   const RequestCard({super.key, required this.request});
@@ -26,12 +27,34 @@ class RequestCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.hardEdge,
       child: InkWell(
-        onTap: () => context.push('/requests/${request.id}'),
+        onTap: request.id.isEmpty
+            ? null
+            : () => context.push('/requests/${request.id}'),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  UserAvatar(
+                    name: request.senderName,
+                    avatarUrl: request.senderAvatarUrl,
+                    radius: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      request.senderName,
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(fontWeight: FontWeight.w600),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
               Row(
                 children: [
                   Expanded(

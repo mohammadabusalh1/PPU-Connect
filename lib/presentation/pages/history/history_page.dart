@@ -34,6 +34,12 @@ class _HistoryPageState extends State<HistoryPage> {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final role =
+        authState is AuthAuthenticated ? authState.user.role : UserRole.seeker;
+    final isTutor = role == UserRole.tutor;
+    final showDiscoverTutors = !isTutor;
+
     return Scaffold(
       appBar: AppBar(title: const Text('History')),
       body: BlocBuilder<ScheduleCubit, ScheduleState>(
@@ -57,8 +63,11 @@ class _HistoryPageState extends State<HistoryPage> {
                 title: 'No history yet',
                 subtitle: 'Completed or cancelled sessions will appear here',
                 lottieAsset: AppLottie.emptySearch,
-                actionLabel: 'Discover tutors',
-                action: () => context.push('/discover'),
+                actionLabel:
+                    showDiscoverTutors ? 'Discover tutors' : null,
+                action: showDiscoverTutors
+                    ? () => context.push('/discover')
+                    : null,
               );
             }
             return ListView.separated(
@@ -67,9 +76,12 @@ class _HistoryPageState extends State<HistoryPage> {
               separatorBuilder: (_, __) => const SizedBox(height: 12),
               itemBuilder: (context, i) {
                 final a = past[i];
+                final peerName = isTutor
+                    ? (a.seekerName ?? 'Student')
+                    : (a.tutorName ?? 'Tutor');
                 return AppointmentCard(
                   appointment: a,
-                  peerName: a.tutorId,
+                  peerName: peerName,
                   onTap: () =>
                       context.push('/schedule/appointments/${a.id}'),
                 ).animate(delay: (i * 40).ms).fadeIn(duration: 250.ms);

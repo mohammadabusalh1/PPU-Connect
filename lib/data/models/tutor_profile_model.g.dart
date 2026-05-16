@@ -20,9 +20,9 @@ _$TutorProfileModelImpl _$$TutorProfileModelImplFromJson(
   totalReviews: (json['totalReviews'] as num).toInt(),
   completedSessions: (json['completedSessions'] as num).toInt(),
   isAcceptingRequests: json['isAcceptingRequests'] as bool,
-  weeklySlots: (json['weeklySlots'] as List<dynamic>)
-      .map((e) => WeeklySlotModel.fromJson(e as Map<String, dynamic>))
-      .toList(),
+  weeklySlots: const WeeklySlotsConverter().fromJson(
+    json['weeklySlots'] as List,
+  ),
   createdAt: const TimestampConverter().fromJson(json['createdAt']),
   updatedAt: const TimestampConverter().fromJson(json['updatedAt']),
 );
@@ -39,7 +39,7 @@ Map<String, dynamic> _$$TutorProfileModelImplToJson(
   'totalReviews': instance.totalReviews,
   'completedSessions': instance.completedSessions,
   'isAcceptingRequests': instance.isAcceptingRequests,
-  'weeklySlots': instance.weeklySlots,
+  'weeklySlots': const WeeklySlotsConverter().toJson(instance.weeklySlots),
   'createdAt': const TimestampConverter().toJson(instance.createdAt),
   'updatedAt': const TimestampConverter().toJson(instance.updatedAt),
 };

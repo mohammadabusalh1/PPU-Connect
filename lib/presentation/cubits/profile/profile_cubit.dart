@@ -18,8 +18,18 @@ class ProfileCubit extends Cubit<ProfileState> {
     try {
       final user = await _userRepo.getUserById(userId);
       if (isClosed) return;
-      if (user == null) { emit(const ProfileError('User not found')); return; }
-      final tutorProfile = await _tutorRepo.getProfile(userId);
+      if (user == null) {
+        emit(const ProfileError('User not found'));
+        return;
+      }
+
+      TutorProfile? tutorProfile;
+      try {
+        tutorProfile = await _tutorRepo.getProfile(userId);
+      } catch (_) {
+        // Tutor profile is optional; a bad/corrupt doc must not block the user header.
+      }
+
       if (isClosed) return;
       emit(ProfileLoaded(user: user, tutorProfile: tutorProfile));
     } catch (e) {
@@ -28,29 +38,29 @@ class ProfileCubit extends Cubit<ProfileState> {
     }
   }
 
-  Future<void> updateUser(User updated) async {
+  Future<bool> updateUser(User updated) async {
     final current = state;
-    if (current is! ProfileLoaded) return;
+    if (current is! ProfileLoaded) return false;
     try {
       await _userRepo.updateUser(updated);
-      if (isClosed) return;
+      if (isClosed) return false;
       emit(current.copyWith(user: updated));
-    } catch (e) {
-      if (isClosed) return;
-      emit(ProfileError(e.toString().replaceFirst('Exception: ', '')));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 
-  Future<void> updateTutorProfile(TutorProfile profile) async {
+  Future<bool> updateTutorProfile(TutorProfile profile) async {
     final current = state;
-    if (current is! ProfileLoaded) return;
+    if (current is! ProfileLoaded) return false;
     try {
       await _tutorRepo.updateProfile(profile);
-      if (isClosed) return;
+      if (isClosed) return false;
       emit(current.copyWith(tutorProfile: profile));
-    } catch (e) {
-      if (isClosed) return;
-      emit(ProfileError(e.toString().replaceFirst('Exception: ', '')));
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 }

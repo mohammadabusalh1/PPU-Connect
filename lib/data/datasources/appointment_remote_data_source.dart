@@ -2,10 +2,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:injectable/injectable.dart';
 import 'package:ppu_connect/data/models/appointment_model.dart';
 import 'package:ppu_connect/data/models/appointment_request_model.dart';
+import 'package:ppu_connect/data/utils/firestore_doc_json.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 
 abstract interface class AppointmentRemoteDataSource {
   Future<AppointmentRequestModel> sendRequest(AppointmentRequestModel request);
+  Future<void> acceptAppointmentRequest({
+    required AppointmentRequestModel request,
+    required double hourlyRate,
+    required String currency,
+  });
   Future<void> updateRequestStatus(String id, RequestStatus status, {String? reason});
   Future<AppointmentRequestModel?> getRequest(String id);
   Stream<List<AppointmentRequestModel>> watchIncomingRequests(String tutorId);
@@ -13,6 +19,19 @@ abstract interface class AppointmentRemoteDataSource {
   Future<void> cancelAppointment(String id, {String? cancelledBy, String? reason});
   Stream<List<AppointmentModel>> watchAppointments(String userId);
   Future<AppointmentModel?> getAppointment(String id);
+  Future<List<AppointmentModel>> getConfirmedAppointmentsForTutor({
+    required String tutorId,
+    required DateTime from,
+    required DateTime to,
+  });
+  Future<bool> hasPendingOrAcceptedRequest({
+    required String seekerId,
+    required String tutorId,
+    required DateTime dayStart,
+    required DateTime dayEnd,
+    required DateTime proposedStartAt,
+    required DateTime proposedEndAt,
+  });
 }
 
 @Injectable(as: AppointmentRemoteDataSource)
@@ -30,7 +49,101 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
     final doc = _requests.doc(request.id.isEmpty ? null : request.id);
     final data = request.toJson();
     await doc.set(data);
-    return AppointmentRequestModel.fromJson({'id': doc.id, ...data});
+    return AppointmentRequestModel.fromJson(mergeFirestoreDocId(doc.id, data));
+  }
+
+  @override
+  Future<void> acceptAppointmentRequest({
+    required AppointmentRequestModel request,
+    required double hourlyRate,
+    required String currency,
+  }) async {
+    if (request.id.isEmpty) {
+      throw Exception('Invalid request id');
+    }
+    if (request.status != RequestStatus.pending) {
+      throw Exception('This request is no longer pending');
+    }
+    if (DateTime.now().toUtc().isAfter(request.expiresAt.toUtc())) {
+      throw Exception('This request has expired');
+    }
+
+    final dayStart = DateTime.utc(
+      request.proposedStartAt.year,
+      request.proposedStartAt.month,
+      request.proposedStartAt.day,
+    );
+    final existing = await getConfirmedAppointmentsForTutor(
+      tutorId: request.tutorId,
+      from: dayStart,
+      to: dayStart.add(const Duration(days: 1)),
+    );
+    for (final appt in existing) {
+      if (request.proposedStartAt.toUtc().isBefore(appt.endAt.toUtc()) &&
+          request.proposedEndAt.toUtc().isAfter(appt.startAt.toUtc())) {
+        throw Exception('Tutor already has a confirmed session at this time');
+      }
+    }
+
+    final durationHours = request.proposedEndAt
+            .difference(request.proposedStartAt)
+            .inMinutes /
+        60.0;
+    final amount = (hourlyRate * durationHours).clamp(0, double.infinity);
+
+    await _firestore.runTransaction((txn) async {
+      final reqRef = _requests.doc(request.id);
+      final reqSnap = await txn.get(reqRef);
+      if (!reqSnap.exists || reqSnap.data() == null) {
+        throw Exception('Request not found');
+      }
+
+      final currentStatus = reqSnap.data()!['status'] as String?;
+      if (currentStatus != RequestStatus.pending.name) {
+        throw Exception('This request is no longer pending');
+      }
+
+      final appointmentRef = _appointments.doc();
+      final paymentRef = _firestore.collection('payments').doc();
+      final sessionRef =
+          _firestore.collection('sessionConfirmations').doc(appointmentRef.id);
+
+      txn.set(appointmentRef, {
+        'appointmentRequestId': request.id,
+        'tutorId': request.tutorId,
+        'seekerId': request.seekerId,
+        'tutorName': null,
+        'seekerName': request.senderName,
+        'subject': request.subject,
+        'startAt': Timestamp.fromDate(request.proposedStartAt.toUtc()),
+        'endAt': Timestamp.fromDate(request.proposedEndAt.toUtc()),
+        'status': AppointmentStatus.confirmed.name,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      txn.set(paymentRef, {
+        'appointmentId': appointmentRef.id,
+        'tutorId': request.tutorId,
+        'seekerId': request.seekerId,
+        'amount': amount,
+        'currency': currency,
+        'status': PaymentStatus.held.name,
+        'createdAt': FieldValue.serverTimestamp(),
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+
+      txn.set(sessionRef, {
+        'appointmentId': appointmentRef.id,
+        'tutorConfirmed': false,
+        'seekerConfirmed': false,
+      });
+
+      txn.update(reqRef, {
+        'status': RequestStatus.accepted.name,
+        'updatedAt': FieldValue.serverTimestamp(),
+      });
+    });
   }
 
   @override
@@ -39,6 +152,7 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
     RequestStatus status, {
     String? reason,
   }) async {
+    if (id.isEmpty) throw Exception('Invalid request id');
     final update = <String, dynamic>{
       'status': status.name,
       'updatedAt': FieldValue.serverTimestamp(),
@@ -51,7 +165,9 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
   Future<AppointmentRequestModel?> getRequest(String id) async {
     final doc = await _requests.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;
-    return AppointmentRequestModel.fromJson({'id': id, ...doc.data()!});
+    return AppointmentRequestModel.fromJson(
+      mergeFirestoreDocId(id, doc.data()!),
+    );
   }
 
   @override
@@ -61,7 +177,9 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((s) => s.docs
-              .map((d) => AppointmentRequestModel.fromJson({'id': d.id, ...d.data()}))
+              .map((d) => AppointmentRequestModel.fromJson(
+                    mergeFirestoreDocId(d.id, d.data()),
+                  ))
               .toList());
 
   @override
@@ -71,7 +189,9 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
           .orderBy('createdAt', descending: true)
           .snapshots()
           .map((s) => s.docs
-              .map((d) => AppointmentRequestModel.fromJson({'id': d.id, ...d.data()}))
+              .map((d) => AppointmentRequestModel.fromJson(
+                    mergeFirestoreDocId(d.id, d.data()),
+                  ))
               .toList());
 
   @override
@@ -97,13 +217,66 @@ class AppointmentRemoteDataSourceImpl implements AppointmentRemoteDataSource {
       .orderBy('startAt', descending: true)
       .snapshots()
       .map((s) => s.docs
-          .map((d) => AppointmentModel.fromJson({'id': d.id, ...d.data()}))
+          .map((d) => AppointmentModel.fromJson(
+                mergeFirestoreDocId(d.id, d.data()),
+              ))
           .toList());
 
   @override
   Future<AppointmentModel?> getAppointment(String id) async {
     final doc = await _appointments.doc(id).get();
     if (!doc.exists || doc.data() == null) return null;
-    return AppointmentModel.fromJson({'id': id, ...doc.data()!});
+    return AppointmentModel.fromJson(mergeFirestoreDocId(id, doc.data()!));
+  }
+
+  @override
+  Future<List<AppointmentModel>> getConfirmedAppointmentsForTutor({
+    required String tutorId,
+    required DateTime from,
+    required DateTime to,
+  }) async {
+    final snap = await _appointments
+        .where('tutorId', isEqualTo: tutorId)
+        .where('status', isEqualTo: AppointmentStatus.confirmed.name)
+        .where('startAt', isGreaterThanOrEqualTo: Timestamp.fromDate(from))
+        .where('startAt', isLessThan: Timestamp.fromDate(to))
+        .get();
+    return snap.docs
+        .map((d) => AppointmentModel.fromJson(mergeFirestoreDocId(d.id, d.data())))
+        .toList();
+  }
+
+  @override
+  Future<bool> hasPendingOrAcceptedRequest({
+    required String seekerId,
+    required String tutorId,
+    required DateTime dayStart,
+    required DateTime dayEnd,
+    required DateTime proposedStartAt,
+    required DateTime proposedEndAt,
+  }) async {
+    final snap = await _requests
+        .where('senderId', isEqualTo: seekerId)
+        .where('receiverId', isEqualTo: tutorId)
+        .where('proposedStartAt',
+            isGreaterThanOrEqualTo: Timestamp.fromDate(dayStart))
+        .where('proposedStartAt', isLessThan: Timestamp.fromDate(dayEnd))
+        .get();
+
+    for (final doc in snap.docs) {
+      final data = doc.data();
+      final status = data['status'] as String?;
+      if (status != RequestStatus.pending.name &&
+          status != RequestStatus.accepted.name) {
+        continue;
+      }
+      final start =
+          (data['proposedStartAt'] as Timestamp).toDate().toUtc();
+      final end = (data['proposedEndAt'] as Timestamp).toDate().toUtc();
+      if (proposedStartAt.isBefore(end) && proposedEndAt.isAfter(start)) {
+        return true;
+      }
+    }
+    return false;
   }
 }

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:ppu_connect/core/constants/app_constants.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/browse_tutors/browse_tutors_cubit.dart';
+import 'package:ppu_connect/presentation/cubits/notifications/notifications_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/tutor/tutor_card.dart';
@@ -29,7 +30,10 @@ class _DiscoverPageState extends State<DiscoverPage> {
   void _load({String? query}) {
     final authState = context.read<AuthBloc>().state;
     if (authState is AuthAuthenticated) {
-      context.read<BrowseTutorsCubit>().load(query: query);
+      context.read<BrowseTutorsCubit>().load(
+            query: query,
+            currentUserId: authState.user.id,
+          );
     }
   }
 
@@ -45,10 +49,20 @@ class _DiscoverPageState extends State<DiscoverPage> {
       appBar: AppBar(
         title: const Text('Discover Tutors'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => context.push('/notifications'),
-            tooltip: 'Notifications',
+          BlocBuilder<NotificationsCubit, NotificationsState>(
+            builder: (context, state) {
+              final unread =
+                  state is NotificationsLoaded ? state.unreadCount : 0;
+              return IconButton(
+                icon: Badge(
+                  isLabelVisible: unread > 0,
+                  label: Text(unread > 99 ? '99+' : '$unread'),
+                  child: const Icon(Icons.notifications_outlined),
+                ),
+                onPressed: () => context.push('/notifications'),
+                tooltip: 'Notifications',
+              );
+            },
           ),
         ],
         bottom: PreferredSize(

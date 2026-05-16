@@ -30,6 +30,7 @@ mixin _$TutorProfileModel {
   int get totalReviews => throw _privateConstructorUsedError;
   int get completedSessions => throw _privateConstructorUsedError;
   bool get isAcceptingRequests => throw _privateConstructorUsedError;
+  @WeeklySlotsConverter()
   List<WeeklySlotModel> get weeklySlots => throw _privateConstructorUsedError;
   @TimestampConverter()
   DateTime get createdAt => throw _privateConstructorUsedError;
@@ -63,7 +64,7 @@ abstract class $TutorProfileModelCopyWith<$Res> {
     int totalReviews,
     int completedSessions,
     bool isAcceptingRequests,
-    List<WeeklySlotModel> weeklySlots,
+    @WeeklySlotsConverter() List<WeeklySlotModel> weeklySlots,
     @TimestampConverter() DateTime createdAt,
     @TimestampConverter() DateTime updatedAt,
   });
@@ -172,7 +173,7 @@ abstract class _$$TutorProfileModelImplCopyWith<$Res>
     int totalReviews,
     int completedSessions,
     bool isAcceptingRequests,
-    List<WeeklySlotModel> weeklySlots,
+    @WeeklySlotsConverter() List<WeeklySlotModel> weeklySlots,
     @TimestampConverter() DateTime createdAt,
     @TimestampConverter() DateTime updatedAt,
   });
@@ -273,7 +274,7 @@ class _$TutorProfileModelImpl implements _TutorProfileModel {
     required this.totalReviews,
     required this.completedSessions,
     required this.isAcceptingRequests,
-    required final List<WeeklySlotModel> weeklySlots,
+    @WeeklySlotsConverter() required final List<WeeklySlotModel> weeklySlots,
     @TimestampConverter() required this.createdAt,
     @TimestampConverter() required this.updatedAt,
   }) : _subjects = subjects,
@@ -308,6 +309,7 @@ class _$TutorProfileModelImpl implements _TutorProfileModel {
   final bool isAcceptingRequests;
   final List<WeeklySlotModel> _weeklySlots;
   @override
+  @WeeklySlotsConverter()
   List<WeeklySlotModel> get weeklySlots {
     if (_weeklySlots is EqualUnmodifiableListView) return _weeklySlots;
     // ignore: implicit_dynamic_type
@@ -402,7 +404,7 @@ abstract class _TutorProfileModel implements TutorProfileModel {
     required final int totalReviews,
     required final int completedSessions,
     required final bool isAcceptingRequests,
-    required final List<WeeklySlotModel> weeklySlots,
+    @WeeklySlotsConverter() required final List<WeeklySlotModel> weeklySlots,
     @TimestampConverter() required final DateTime createdAt,
     @TimestampConverter() required final DateTime updatedAt,
   }) = _$TutorProfileModelImpl;
@@ -429,6 +431,7 @@ abstract class _TutorProfileModel implements TutorProfileModel {
   @override
   bool get isAcceptingRequests;
   @override
+  @WeeklySlotsConverter()
   List<WeeklySlotModel> get weeklySlots;
   @override
   @TimestampConverter()

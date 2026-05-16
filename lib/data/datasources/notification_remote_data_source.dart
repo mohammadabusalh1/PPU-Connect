@@ -4,6 +4,7 @@ import 'package:ppu_connect/data/models/app_notification_model.dart';
 
 abstract interface class NotificationRemoteDataSource {
   Stream<List<AppNotificationModel>> watchNotifications(String userId);
+  Future<void> createNotification(AppNotificationModel notification);
   Future<void> markAsRead(String notificationId);
   Future<void> markAllAsRead(String userId);
   Future<int> getUnreadCount(String userId);
@@ -18,14 +19,23 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
       _firestore.collection('notifications');
 
   @override
+  Future<void> createNotification(AppNotificationModel notification) async {
+    final doc = _col.doc();
+    final data = notification.toJson()..remove('id');
+    await doc.set(data);
+  }
+
+  @override
   Stream<List<AppNotificationModel>> watchNotifications(String userId) => _col
       .where('userId', isEqualTo: userId)
-      .orderBy('createdAt', descending: true)
-      .limit(50)
       .snapshots()
-      .map((s) => s.docs
-          .map((d) => AppNotificationModel.fromJson({'id': d.id, ...d.data()}))
-          .toList());
+      .map((s) {
+        final list = s.docs
+            .map((d) => AppNotificationModel.fromJson({'id': d.id, ...d.data()}))
+            .toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list.take(50).toList();
+      });
 
   @override
   Future<void> markAsRead(String notificationId) => _col

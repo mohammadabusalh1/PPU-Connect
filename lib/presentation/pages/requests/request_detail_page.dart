@@ -8,10 +8,86 @@ import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:shimmer/shimmer.dart';
 
-class RequestDetailPage extends StatelessWidget {
+class RequestDetailPage extends StatefulWidget {
   const RequestDetailPage({super.key, required this.requestId});
 
   final String requestId;
+
+  @override
+  State<RequestDetailPage> createState() => _RequestDetailPageState();
+}
+
+class _RequestDetailPageState extends State<RequestDetailPage> {
+  bool _acting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _watch());
+  }
+
+  void _watch() {
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    final cubit = context.read<AppointmentRequestsCubit>();
+    final role = authState.user.role;
+    if (role == UserRole.tutor || role == UserRole.both) {
+      cubit.watchIncoming(authState.user.id);
+    } else {
+      cubit.watchSent(authState.user.id);
+    }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
+      ),
+    );
+  }
+
+  Future<void> _handleAccept(String requestId) async {
+    setState(() => _acting = true);
+    final result =
+        await context.read<AppointmentRequestsCubit>().accept(requestId);
+    if (!mounted) return;
+    setState(() => _acting = false);
+    if (result.ok) {
+      _showMessage('Request accepted');
+      context.pop();
+    } else {
+      _showMessage(result.error ?? 'Failed to accept request', isError: true);
+    }
+  }
+
+  Future<void> _handleReject(String requestId) async {
+    setState(() => _acting = true);
+    final result =
+        await context.read<AppointmentRequestsCubit>().reject(requestId);
+    if (!mounted) return;
+    setState(() => _acting = false);
+    if (result.ok) {
+      _showMessage('Request rejected');
+      context.pop();
+    } else {
+      _showMessage(result.error ?? 'Failed to reject request', isError: true);
+    }
+  }
+
+  Future<void> _handleCancel(String requestId) async {
+    setState(() => _acting = true);
+    final result =
+        await context.read<AppointmentRequestsCubit>().cancel(requestId);
+    if (!mounted) return;
+    setState(() => _acting = false);
+    if (result.ok) {
+      _showMessage('Request cancelled');
+      context.pop();
+    } else {
+      _showMessage(result.error ?? 'Failed to cancel request', isError: true);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +102,11 @@ class RequestDetailPage extends StatelessWidget {
             return _buildSkeleton(context);
           }
           if (state is AppointmentRequestsError) {
-            return ErrorStateWidget(message: state.message, onRetry: () {});
+            return ErrorStateWidget(message: state.message, onRetry: _watch);
           }
           if (state is AppointmentRequestsLoaded) {
-            final req = state.requests.where((r) => r.id == requestId).firstOrNull;
+            final req =
+                state.requests.where((r) => r.id == widget.requestId).firstOrNull;
             if (req == null) {
               return const Center(child: Text('Request not found'));
             }
@@ -72,38 +149,32 @@ class RequestDetailPage extends StatelessWidget {
                 const SizedBox(height: 24),
                 if (isTutor && isPending) ...[
                   FilledButton.icon(
-                    icon: const Icon(Icons.check_rounded),
+                    icon: _acting
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.check_rounded),
                     label: const Text('Accept Request'),
-                    onPressed: () async {
-                      await context
-                          .read<AppointmentRequestsCubit>()
-                          .accept(req.id);
-                      if (context.mounted) context.pop();
-                    },
+                    onPressed:
+                        _acting ? null : () => _handleAccept(req.id),
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     icon: const Icon(Icons.close_rounded),
                     label: const Text('Reject Request'),
                     style: OutlinedButton.styleFrom(foregroundColor: cs.error),
-                    onPressed: () async {
-                      await context
-                          .read<AppointmentRequestsCubit>()
-                          .reject(req.id);
-                      if (context.mounted) context.pop();
-                    },
+                    onPressed:
+                        _acting ? null : () => _handleReject(req.id),
                   ),
                 ] else if (!isTutor && isPending) ...[
                   OutlinedButton.icon(
                     icon: const Icon(Icons.cancel_outlined),
                     label: const Text('Cancel Request'),
                     style: OutlinedButton.styleFrom(foregroundColor: cs.error),
-                    onPressed: () async {
-                      await context
-                          .read<AppointmentRequestsCubit>()
-                          .cancel(req.id);
-                      if (context.mounted) context.pop();
-                    },
+                    onPressed:
+                        _acting ? null : () => _handleCancel(req.id),
                   ),
                 ],
               ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:ppu_connect/core/constants/app_constants.dart';
 
-class UserAvatar extends StatelessWidget {
+class UserAvatar extends StatefulWidget {
   const UserAvatar({
     super.key,
     required this.name,
@@ -12,34 +13,36 @@ class UserAvatar extends StatelessWidget {
   final String? avatarUrl;
   final double radius;
 
-  String get _initials {
-    final parts = name.trim().split(' ').where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) return '?';
-    if (parts.length == 1) return parts[0][0].toUpperCase();
-    return '${parts[0][0]}${parts[parts.length - 1][0]}'.toUpperCase();
+  @override
+  State<UserAvatar> createState() => _UserAvatarState();
+}
+
+class _UserAvatarState extends State<UserAvatar> {
+  bool _hasError = false;
+
+  static const _fallback = AssetImage(AppImages.profile);
+
+  @override
+  void didUpdateWidget(UserAvatar old) {
+    super.didUpdateWidget(old);
+    if (old.avatarUrl != widget.avatarUrl) {
+      _hasError = false;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final url = avatarUrl;
-    if (url != null && url.isNotEmpty) {
-      return CircleAvatar(
-        radius: radius,
-        backgroundImage: NetworkImage(url),
-        onBackgroundImageError: (_, __) {},
-      );
-    }
+    final url = widget.avatarUrl;
+    final useNetwork = url != null && url.isNotEmpty && !_hasError;
+
     return CircleAvatar(
-      radius: radius,
-      backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-      child: Text(
-        _initials,
-        style: TextStyle(
-          fontSize: radius * 0.6,
-          fontWeight: FontWeight.w600,
-          color: Theme.of(context).colorScheme.onPrimaryContainer,
-        ),
-      ),
+      radius: widget.radius,
+      backgroundImage: useNetwork ? NetworkImage(url) : _fallback,
+      onBackgroundImageError: useNetwork
+          ? (_, __) {
+              if (mounted) setState(() => _hasError = true);
+            }
+          : null,
     );
   }
 }

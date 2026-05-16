@@ -46,7 +46,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
     if (state is! ProfileLoaded) return;
 
     setState(() => _saving = true);
-    await context.read<ProfileCubit>().updateUser(
+    final saved = await context.read<ProfileCubit>().updateUser(
           state.user.copyWith(
             fullName: _nameCtrl.text.trim(),
             phoneNumber: _phoneCtrl.text.trim().isEmpty
@@ -58,7 +58,13 @@ class _EditProfilePageState extends State<EditProfilePage> {
         );
     if (mounted) {
       setState(() => _saving = false);
-      context.pop();
+      if (saved) {
+        context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save profile')),
+        );
+      }
     }
   }
 

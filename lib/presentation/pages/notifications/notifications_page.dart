@@ -1,20 +1,34 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ppu_connect/core/di/injection.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
+import 'package:ppu_connect/core/constants/app_constants.dart';
 import 'package:ppu_connect/presentation/cubits/notifications/notifications_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/notification/notification_item.dart';
 import 'package:shimmer/shimmer.dart';
 
-class NotificationsPage extends StatefulWidget {
+class NotificationsPage extends StatelessWidget {
   const NotificationsPage({super.key});
 
   @override
-  State<NotificationsPage> createState() => _NotificationsPageState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => getIt<NotificationsCubit>(),
+      child: const _NotificationsView(),
+    );
+  }
 }
 
-class _NotificationsPageState extends State<NotificationsPage> {
+class _NotificationsView extends StatefulWidget {
+  const _NotificationsView();
+
+  @override
+  State<_NotificationsView> createState() => _NotificationsViewState();
+}
+
+class _NotificationsViewState extends State<_NotificationsView> {
   @override
   void initState() {
     super.initState();
@@ -41,7 +55,9 @@ class _NotificationsPageState extends State<NotificationsPage> {
                   onPressed: () {
                     final authState = context.read<AuthBloc>().state;
                     if (authState is AuthAuthenticated) {
-                      context.read<NotificationsCubit>().markAllRead(authState.user.id);
+                      context
+                          .read<NotificationsCubit>()
+                          .markAllRead(authState.user.id);
                     }
                   },
                   child: const Text('Mark all read'),
@@ -64,6 +80,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
           if (state is NotificationsLoaded) {
             if (state.notifications.isEmpty) {
               return const EmptyStateWidget(
+                lottieAsset: AppLottie.emptySearch,
                 title: 'No notifications',
                 subtitle: "You're all caught up!",
               );

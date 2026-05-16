@@ -19,6 +19,8 @@ final _privateConstructorUsedError = UnsupportedError(
 mixin _$AppointmentRequest {
   String get id => throw _privateConstructorUsedError;
   String get senderId => throw _privateConstructorUsedError;
+  String get senderName => throw _privateConstructorUsedError;
+  String? get senderAvatarUrl => throw _privateConstructorUsedError;
   String get receiverId => throw _privateConstructorUsedError;
   String get tutorId => throw _privateConstructorUsedError;
   String get seekerId => throw _privateConstructorUsedError;
@@ -49,6 +51,8 @@ abstract class $AppointmentRequestCopyWith<$Res> {
   $Res call({
     String id,
     String senderId,
+    String senderName,
+    String? senderAvatarUrl,
     String receiverId,
     String tutorId,
     String seekerId,
@@ -81,6 +85,8 @@ class _$AppointmentRequestCopyWithImpl<$Res, $Val extends AppointmentRequest>
   $Res call({
     Object? id = null,
     Object? senderId = null,
+    Object? senderName = null,
+    Object? senderAvatarUrl = freezed,
     Object? receiverId = null,
     Object? tutorId = null,
     Object? seekerId = null,
@@ -104,6 +110,14 @@ class _$AppointmentRequestCopyWithImpl<$Res, $Val extends AppointmentRequest>
                 ? _value.senderId
                 : senderId // ignore: cast_nullable_to_non_nullable
                       as String,
+            senderName: null == senderName
+                ? _value.senderName
+                : senderName // ignore: cast_nullable_to_non_nullable
+                      as String,
+            senderAvatarUrl: freezed == senderAvatarUrl
+                ? _value.senderAvatarUrl
+                : senderAvatarUrl // ignore: cast_nullable_to_non_nullable
+                      as String?,
             receiverId: null == receiverId
                 ? _value.receiverId
                 : receiverId // ignore: cast_nullable_to_non_nullable
@@ -170,6 +184,8 @@ abstract class _$$AppointmentRequestImplCopyWith<$Res>
   $Res call({
     String id,
     String senderId,
+    String senderName,
+    String? senderAvatarUrl,
     String receiverId,
     String tutorId,
     String seekerId,
@@ -201,6 +217,8 @@ class __$$AppointmentRequestImplCopyWithImpl<$Res>
   $Res call({
     Object? id = null,
     Object? senderId = null,
+    Object? senderName = null,
+    Object? senderAvatarUrl = freezed,
     Object? receiverId = null,
     Object? tutorId = null,
     Object? seekerId = null,
@@ -224,6 +242,14 @@ class __$$AppointmentRequestImplCopyWithImpl<$Res>
             ? _value.senderId
             : senderId // ignore: cast_nullable_to_non_nullable
                   as String,
+        senderName: null == senderName
+            ? _value.senderName
+            : senderName // ignore: cast_nullable_to_non_nullable
+                  as String,
+        senderAvatarUrl: freezed == senderAvatarUrl
+            ? _value.senderAvatarUrl
+            : senderAvatarUrl // ignore: cast_nullable_to_non_nullable
+                  as String?,
         receiverId: null == receiverId
             ? _value.receiverId
             : receiverId // ignore: cast_nullable_to_non_nullable
@@ -283,6 +309,8 @@ class _$AppointmentRequestImpl implements _AppointmentRequest {
   const _$AppointmentRequestImpl({
     required this.id,
     required this.senderId,
+    required this.senderName,
+    this.senderAvatarUrl,
     required this.receiverId,
     required this.tutorId,
     required this.seekerId,
@@ -301,6 +329,10 @@ class _$AppointmentRequestImpl implements _AppointmentRequest {
   final String id;
   @override
   final String senderId;
+  @override
+  final String senderName;
+  @override
+  final String? senderAvatarUrl;
   @override
   final String receiverId;
   @override
@@ -328,7 +360,7 @@ class _$AppointmentRequestImpl implements _AppointmentRequest {
 
   @override
   String toString() {
-    return 'AppointmentRequest(id: $id, senderId: $senderId, receiverId: $receiverId, tutorId: $tutorId, seekerId: $seekerId, subject: $subject, note: $note, proposedStartAt: $proposedStartAt, proposedEndAt: $proposedEndAt, status: $status, linkedTutoringRequestId: $linkedTutoringRequestId, expiresAt: $expiresAt, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'AppointmentRequest(id: $id, senderId: $senderId, senderName: $senderName, senderAvatarUrl: $senderAvatarUrl, receiverId: $receiverId, tutorId: $tutorId, seekerId: $seekerId, subject: $subject, note: $note, proposedStartAt: $proposedStartAt, proposedEndAt: $proposedEndAt, status: $status, linkedTutoringRequestId: $linkedTutoringRequestId, expiresAt: $expiresAt, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -339,6 +371,10 @@ class _$AppointmentRequestImpl implements _AppointmentRequest {
             (identical(other.id, id) || other.id == id) &&
             (identical(other.senderId, senderId) ||
                 other.senderId == senderId) &&
+            (identical(other.senderName, senderName) ||
+                other.senderName == senderName) &&
+            (identical(other.senderAvatarUrl, senderAvatarUrl) ||
+                other.senderAvatarUrl == senderAvatarUrl) &&
             (identical(other.receiverId, receiverId) ||
                 other.receiverId == receiverId) &&
             (identical(other.tutorId, tutorId) || other.tutorId == tutorId) &&
@@ -369,6 +405,8 @@ class _$AppointmentRequestImpl implements _AppointmentRequest {
     runtimeType,
     id,
     senderId,
+    senderName,
+    senderAvatarUrl,
     receiverId,
     tutorId,
     seekerId,
@@ -399,6 +437,8 @@ abstract class _AppointmentRequest implements AppointmentRequest {
   const factory _AppointmentRequest({
     required final String id,
     required final String senderId,
+    required final String senderName,
+    final String? senderAvatarUrl,
     required final String receiverId,
     required final String tutorId,
     required final String seekerId,
@@ -417,6 +457,10 @@ abstract class _AppointmentRequest implements AppointmentRequest {
   String get id;
   @override
   String get senderId;
+  @override
+  String get senderName;
+  @override
+  String? get senderAvatarUrl;
   @override
   String get receiverId;
   @override

@@ -4,10 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:ppu_connect/domain/entities/review.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/reviews/reviews_cubit.dart';
+import 'package:ppu_connect/presentation/pages/reviews/reviews_scope.dart';
 import 'package:ppu_connect/presentation/widgets/buttons/primary_button.dart';
 import 'package:ppu_connect/presentation/widgets/form/app_text_field.dart';
 
-class WriteReviewPage extends StatefulWidget {
+class WriteReviewPage extends StatelessWidget {
   const WriteReviewPage({
     super.key,
     required this.appointmentId,
@@ -18,10 +19,30 @@ class WriteReviewPage extends StatefulWidget {
   final String tutorId;
 
   @override
-  State<WriteReviewPage> createState() => _WriteReviewPageState();
+  Widget build(BuildContext context) {
+    return ReviewsScope(
+      child: _WriteReviewView(
+        appointmentId: appointmentId,
+        tutorId: tutorId,
+      ),
+    );
+  }
 }
 
-class _WriteReviewPageState extends State<WriteReviewPage> {
+class _WriteReviewView extends StatefulWidget {
+  const _WriteReviewView({
+    required this.appointmentId,
+    required this.tutorId,
+  });
+
+  final String appointmentId;
+  final String tutorId;
+
+  @override
+  State<_WriteReviewView> createState() => _WriteReviewViewState();
+}
+
+class _WriteReviewViewState extends State<_WriteReviewView> {
   int _rating = 5;
   final _commentCtrl = TextEditingController();
   bool _submitting = false;

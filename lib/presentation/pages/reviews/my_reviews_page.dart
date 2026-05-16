@@ -1,21 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:ppu_connect/core/constants/app_constants.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/reviews/reviews_cubit.dart';
+import 'package:ppu_connect/presentation/pages/reviews/reviews_scope.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/review/review_card.dart';
 import 'package:shimmer/shimmer.dart';
 
-class MyReviewsPage extends StatefulWidget {
+class MyReviewsPage extends StatelessWidget {
   const MyReviewsPage({super.key});
 
   @override
-  State<MyReviewsPage> createState() => _MyReviewsPageState();
+  Widget build(BuildContext context) {
+    return const ReviewsScope(child: _MyReviewsView());
+  }
 }
 
-class _MyReviewsPageState extends State<MyReviewsPage> {
+class _MyReviewsView extends StatefulWidget {
+  const _MyReviewsView();
+
+  @override
+  State<_MyReviewsView> createState() => _MyReviewsViewState();
+}
+
+class _MyReviewsViewState extends State<_MyReviewsView> {
   @override
   void initState() {
     super.initState();
@@ -42,6 +53,7 @@ class _MyReviewsPageState extends State<MyReviewsPage> {
           if (state is ReviewsLoaded) {
             if (state.reviews.isEmpty) {
               return const EmptyStateWidget(
+                lottieAsset: AppLottie.emptySearch,
                 title: 'No reviews yet',
                 subtitle: 'Complete sessions to receive reviews',
               );

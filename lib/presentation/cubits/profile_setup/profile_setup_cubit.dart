@@ -3,6 +3,7 @@ import 'package:injectable/injectable.dart';
 import 'package:ppu_connect/domain/entities/tutor_profile.dart';
 import 'package:ppu_connect/domain/entities/user.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
+import 'package:ppu_connect/core/utils/user_display_name.dart';
 import 'package:ppu_connect/domain/repositories/tutor_profile_repository.dart';
 import 'package:ppu_connect/domain/repositories/user_repository.dart';
 
@@ -69,19 +70,26 @@ class ProfileSetupCubit extends Cubit<ProfileSetupState> {
     emit(state.copyWith(isSaving: true, error: null));
     try {
       final now = DateTime.now();
+      final existing = await _userRepo.getUserById(userId);
       final user = User(
         id: userId,
-        fullName: state.fullName,
+        fullName: () {
+          final fromState = state.fullName.trim();
+          if (fromState.isNotEmpty) return fromState;
+          final fromExisting = existing?.fullName.trim() ?? '';
+          if (fromExisting.isNotEmpty) return fromExisting;
+          return resolveUserDisplayName(fullName: '', email: email);
+        }(),
         email: email,
-        phoneNumber: state.phoneNumber,
-        avatarUrl: state.avatarUrl,
+        phoneNumber: state.phoneNumber ?? existing?.phoneNumber,
+        avatarUrl: state.avatarUrl ?? existing?.avatarUrl,
         major: state.major,
         academicLevel: state.academicLevel,
-        gpa: state.gpa,
+        gpa: state.gpa ?? existing?.gpa,
         role: state.role,
         isActive: true,
-        reportCount: 0,
-        createdAt: now,
+        reportCount: existing?.reportCount ?? 0,
+        createdAt: existing?.createdAt ?? now,
         updatedAt: now,
       );
       await _userRepo.updateUser(user);

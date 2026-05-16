@@ -11,6 +11,8 @@ class Appointment with _$Appointment {
     required String appointmentRequestId,
     required String tutorId,
     required String seekerId,
+    String? tutorName,
+    String? seekerName,
     required String subject,
     required DateTime startAt,
     required DateTime endAt,

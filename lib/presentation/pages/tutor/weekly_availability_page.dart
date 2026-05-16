@@ -43,10 +43,13 @@ class _WeeklyAvailabilityPageState extends State<WeeklyAvailabilityPage> {
     if (end == null || !mounted) return;
 
     // dayIndex 0=Mon → dayOfWeek 1=Mon per ISO 8601
+    final dayOfWeek = dayIndex + 1;
+    final id =
+        '${dayOfWeek}_${start.hour}_${start.minute}_${end.hour}_${end.minute}';
     setState(() {
       _slots.add(WeeklySlot(
-        id: '',
-        dayOfWeek: dayIndex + 1,
+        id: id,
+        dayOfWeek: dayOfWeek,
         startTime: AppTimeOfDay(hour: start.hour, minute: start.minute),
         endTime: AppTimeOfDay(hour: end.hour, minute: end.minute),
         isActive: true,
@@ -55,18 +58,38 @@ class _WeeklyAvailabilityPageState extends State<WeeklyAvailabilityPage> {
   }
 
   Future<void> _save() async {
-    final state = context.read<ProfileCubit>().state;
-    if (state is! ProfileLoaded || state.tutorProfile == null) return;
-    setState(() => _saving = true);
-    await context.read<ProfileCubit>().updateTutorProfile(
-          state.tutorProfile!.copyWith(weeklySlots: List.unmodifiable(_slots)),
+    final cubit = context.read<ProfileCubit>();
+    final state = cubit.state;
+    if (state is! ProfileLoaded || state.tutorProfile == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              state is ProfileError
+                  ? state.message
+                  : 'Profile not loaded. Go back and try again.',
+            ),
+          ),
         );
-    if (mounted) {
-      setState(() => _saving = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Availability saved')),
-      );
+      }
+      return;
     }
+    setState(() => _saving = true);
+    final saved = await cubit.updateTutorProfile(
+      state.tutorProfile!.copyWith(
+        weeklySlots: List.unmodifiable(_slots),
+        updatedAt: DateTime.now().toUtc(),
+      ),
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          saved ? 'Availability saved' : 'Could not save availability',
+        ),
+      ),
+    );
   }
 
   @override

@@ -12,6 +12,7 @@ abstract final class AppDurations {
 // ignore: avoid_classes_with_only_static_members
 abstract final class AppImages {
   static const logo = 'assets/images/logo.png';
+  static const profile = 'assets/images/profile.png';
   static const avatarPlaceholder = 'assets/images/avatar_placeholder.svg';
   static const ppuLogo = 'assets/images/ppu_logo.svg';
   static const onboardingHero = 'assets/images/onboarding_hero.svg';

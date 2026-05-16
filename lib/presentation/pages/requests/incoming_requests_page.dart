@@ -4,9 +4,11 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment_requests_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/appointment/request_card.dart';
+import 'package:ppu_connect/core/constants/app_constants.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:shimmer/shimmer.dart';
+
 
 class IncomingRequestsPage extends StatefulWidget {
   const IncomingRequestsPage({super.key});
@@ -42,6 +44,7 @@ class _IncomingRequestsPageState extends State<IncomingRequestsPage> {
           if (state is AppointmentRequestsLoaded) {
             if (state.requests.isEmpty) {
               return const EmptyStateWidget(
+                lottieAsset: AppLottie.emptySearch,
                 title: 'No incoming requests',
                 subtitle: 'Students will send you session requests here',
               );

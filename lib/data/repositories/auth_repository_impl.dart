@@ -43,6 +43,10 @@ class AuthRepositoryImpl implements AuthRepository {
       return model.toEntity();
     } on fb.FirebaseAuthException catch (e) {
       throw _mapFirebaseError(e);
+    } catch (e) {
+      throw Exception(
+        e.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 

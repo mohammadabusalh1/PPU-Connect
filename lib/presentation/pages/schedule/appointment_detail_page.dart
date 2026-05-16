@@ -34,6 +34,10 @@ class AppointmentDetailPage extends StatelessWidget {
           final authState = context.read<AuthBloc>().state;
           final myId =
               authState is AuthAuthenticated ? authState.user.id : '';
+          final isTutor = appt.tutorId == myId;
+          final peerName = isTutor
+              ? (appt.seekerName ?? 'Student')
+              : (appt.tutorName ?? 'Tutor');
           final dateFmt = DateFormat('EEE, MMM d, yyyy');
           final timeFmt = DateFormat('h:mm a');
           final canCancel = appt.status == AppointmentStatus.confirmed &&
@@ -59,8 +63,7 @@ class AppointmentDetailPage extends StatelessWidget {
                   dateFmt.format(appt.startAt)),
               _Row(Icons.access_time_rounded, 'Time',
                   '${timeFmt.format(appt.startAt)} – ${timeFmt.format(appt.endAt)}'),
-              _Row(Icons.person_outline_rounded, 'Peer',
-                  appt.tutorId == myId ? appt.seekerId : appt.tutorId),
+              _Row(Icons.person_outline_rounded, 'Peer', peerName),
               if (appt.cancellationReason != null)
                 _Row(Icons.info_outline, 'Cancellation Reason',
                     appt.cancellationReason!),

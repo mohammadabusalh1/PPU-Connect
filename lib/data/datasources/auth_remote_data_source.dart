@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:injectable/injectable.dart';
+import 'package:ppu_connect/core/utils/user_display_name.dart';
 import 'package:ppu_connect/data/models/user_model.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 
@@ -50,10 +51,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
 
     final now = DateTime.now();
+    final email = fbUser.email ?? googleUser.email;
     final model = UserModel(
       id: fbUser.uid,
-      fullName: fbUser.displayName ?? '',
-      email: fbUser.email ?? '',
+      fullName: resolveUserDisplayName(
+        fullName: fbUser.displayName ?? googleUser.displayName ?? '',
+        email: email,
+      ),
+      email: email,
       avatarUrl: fbUser.photoURL,
       major: '',
       academicLevel: AcademicLevel.firstYear,
@@ -71,7 +76,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Stream<UserModel?> watchAuthState() {
     return _auth.authStateChanges().asyncMap((fbUser) async {
       if (fbUser == null) return null;
-      return _fetchUserModel(fbUser.uid);
+      final stored = await _loadUserDocument(fbUser.uid);
+      if (stored != null) return stored;
+      // Firestore write may still be in flight right after registration.
+      return _userModelFromFirebaseUser(fbUser);
     });
   }
 
@@ -99,11 +107,15 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     );
     final fbUser = cred.user!;
     await fbUser.updateDisplayName(fullName);
+    await fbUser.reload();
 
     final now = DateTime.now();
+    final resolvedName = _auth.currentUser?.displayName?.trim();
     final model = UserModel(
       id: fbUser.uid,
-      fullName: fullName,
+      fullName: resolvedName != null && resolvedName.isNotEmpty
+          ? resolvedName
+          : fullName,
       email: email,
       major: '',
       academicLevel: AcademicLevel.firstYear,
@@ -145,11 +157,43 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<void> reloadUser() => _auth.currentUser!.reload();
 
   Future<UserModel> _fetchUserModel(String uid) async {
-    final doc =
-        await _firestore.collection(_usersCollection).doc(uid).get();
-    if (!doc.exists || doc.data() == null) {
-      throw Exception('User document not found for uid: $uid');
+    final stored = await _loadUserDocument(uid);
+    if (stored != null) return stored;
+    throw Exception('User document not found for uid: $uid');
+  }
+
+  Future<UserModel?> _loadUserDocument(String uid) async {
+    for (var attempt = 0; attempt < 5; attempt++) {
+      final doc =
+          await _firestore.collection(_usersCollection).doc(uid).get();
+      if (doc.exists && doc.data() != null) {
+        return UserModel.fromJson({'id': uid, ...doc.data()!});
+      }
+      if (attempt < 4) {
+        await Future.delayed(Duration(milliseconds: 100 * (attempt + 1)));
+      }
     }
-    return UserModel.fromJson({'id': uid, ...doc.data()!});
+    return null;
+  }
+
+  UserModel _userModelFromFirebaseUser(fb.User fbUser) {
+    final now = DateTime.now();
+    final email = fbUser.email ?? '';
+    return UserModel(
+      id: fbUser.uid,
+      fullName: resolveUserDisplayName(
+        fullName: fbUser.displayName ?? '',
+        email: email,
+      ),
+      email: email,
+      avatarUrl: fbUser.photoURL,
+      major: '',
+      academicLevel: AcademicLevel.firstYear,
+      role: UserRole.seeker,
+      isActive: true,
+      reportCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    );
   }
 }

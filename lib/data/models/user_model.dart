@@ -1,6 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../core/utils/firestore_converters.dart';
+import '../../core/utils/user_display_name.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/enums/enums.dart';
 
@@ -26,7 +27,7 @@ class UserModel with _$UserModel {
   }) = _UserModel;
 
   factory UserModel.fromJson(Map<String, dynamic> json) =>
-      _$UserModelFromJson(json);
+      _$UserModelFromJson(normalizeUserJson(json));
 
   factory UserModel.fromEntity(User entity) => UserModel(
         id: entity.id,

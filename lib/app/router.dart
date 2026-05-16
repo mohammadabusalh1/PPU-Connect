@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppu_connect/core/di/injection.dart';
@@ -6,10 +7,10 @@ import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/browse_tutors/browse_tutors_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/profile_setup/profile_setup_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/appointment_requests/appointment_requests_cubit.dart';
-import 'package:ppu_connect/presentation/cubits/payments/payments_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/profile/profile_cubit.dart';
-import 'package:ppu_connect/presentation/cubits/reviews/reviews_cubit.dart';
+import 'package:ppu_connect/presentation/cubits/notifications/notifications_cubit.dart';
 import 'package:ppu_connect/presentation/cubits/schedule/schedule_cubit.dart';
+import 'package:ppu_connect/presentation/cubits/tutor_availability/tutor_availability_cubit.dart';
 import 'package:ppu_connect/presentation/pages/auth/forgot_password_page.dart';
 import 'package:ppu_connect/presentation/pages/auth/login_page.dart';
 import 'package:ppu_connect/presentation/pages/auth/register_page.dart';
@@ -42,6 +43,7 @@ import 'package:ppu_connect/presentation/pages/settings/privacy_settings_page.da
 import 'package:ppu_connect/presentation/pages/settings/settings_page.dart';
 import 'package:ppu_connect/presentation/pages/onboarding/onboarding_page.dart';
 import 'package:ppu_connect/presentation/pages/shell/main_shell_page.dart';
+import 'package:ppu_connect/presentation/pages/tutor/tutor_home_page.dart';
 import 'package:ppu_connect/presentation/pages/tutor/tutor_profile_edit_page.dart';
 import 'package:ppu_connect/presentation/pages/tutor/weekly_availability_page.dart';
 import 'package:ppu_connect/presentation/pages/tutoring_requests/create_tutoring_request_page.dart';
@@ -82,6 +84,10 @@ GoRouter createRouter(AuthBloc authBloc) {
         if (needsOnboarding && state.matchedLocation != '/onboarding') {
           return '/onboarding';
         }
+        if (user.role == UserRole.tutor &&
+            state.matchedLocation == '/requests/sent') {
+          return '/schedule';
+        }
         if (isOnAuthRoute) return '/discover';
         if (state.matchedLocation == '/') return '/discover';
       }
@@ -110,21 +116,45 @@ GoRouter createRouter(AuthBloc authBloc) {
 
       // ── Main shell with 4 tab branches ──────────────────────────────────────
       StatefulShellRoute.indexedStack(
-        builder: (_, __, shell) => BlocProvider(
-          create: (_) => getIt<ProfileCubit>(),
+        builder: (_, __, shell) => MultiBlocProvider(
+          providers: [
+            BlocProvider(create: (_) => getIt<ProfileCubit>()),
+            BlocProvider(
+              create: (ctx) {
+                final authState = ctx.read<AuthBloc>().state;
+                final cubit = getIt<NotificationsCubit>();
+                if (authState is AuthAuthenticated) {
+                  cubit.watch(authState.user.id);
+                }
+                return cubit;
+              },
+            ),
+          ],
           child: MainShellPage(navigationShell: shell),
         ),
         branches: [
-          // Branch 0 — Discover
+          // Branch 0 — Discover (seekers) / Requests (tutors)
           StatefulShellBranch(
             navigatorKey: _discoverShellKey,
             routes: [
               GoRoute(
                 path: '/discover',
-                builder: (_, __) => BlocProvider(
-                  create: (_) => getIt<BrowseTutorsCubit>(),
-                  child: const DiscoverPage(),
-                ),
+                builder: (context, __) {
+                  final authState = context.read<AuthBloc>().state;
+                  final role = authState is AuthAuthenticated
+                      ? authState.user.role
+                      : UserRole.seeker;
+                  if (role == UserRole.tutor) {
+                    return BlocProvider(
+                      create: (_) => getIt<AppointmentRequestsCubit>(),
+                      child: const TutorHomePage(),
+                    );
+                  }
+                  return BlocProvider(
+                    create: (_) => getIt<BrowseTutorsCubit>(),
+                    child: const DiscoverPage(),
+                  );
+                },
                 routes: [
                   GoRoute(
                     path: 'tutors/:id',
@@ -193,10 +223,7 @@ GoRouter createRouter(AuthBloc authBloc) {
             routes: [
               GoRoute(
                 path: '/profile',
-                builder: (_, __) => BlocProvider(
-                  create: (_) => getIt<ProfileCubit>(),
-                  child: const MyProfilePage(),
-                ),
+                builder: (_, __) => const MyProfilePage(),
                 routes: [
                   GoRoute(
                     path: 'edit',
@@ -217,14 +244,16 @@ GoRouter createRouter(AuthBloc authBloc) {
         ],
       ),
 
-      // ── Notifications ────────────────────────────────────────────────────────
+      // ── Notifications (root navigator — pushed from shell tabs) ────────────
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/notifications',
         builder: (_, __) => const NotificationsPage(),
       ),
 
-      // ── Appointment Requests ─────────────────────────────────────────────────
+      // ── Appointment Requests (root navigator — pushed from shell tabs) ─────
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/requests/incoming',
         builder: (_, __) => BlocProvider(
           create: (_) => getIt<AppointmentRequestsCubit>(),
@@ -232,6 +261,7 @@ GoRouter createRouter(AuthBloc authBloc) {
         ),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/requests/sent',
         builder: (_, __) => BlocProvider(
           create: (_) => getIt<AppointmentRequestsCubit>(),
@@ -239,15 +269,24 @@ GoRouter createRouter(AuthBloc authBloc) {
         ),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/requests/create',
-        builder: (_, state) => BlocProvider(
-          create: (_) => getIt<AppointmentRequestsCubit>(),
-          child: CreateRequestPage(
-            tutorId: state.uri.queryParameters['tutorId'] ?? '',
-          ),
-        ),
+        builder: (_, state) {
+          final tutorId = state.uri.queryParameters['tutorId'] ?? '';
+          return MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => getIt<AppointmentRequestsCubit>()),
+              BlocProvider(
+                create: (_) =>
+                    getIt<TutorAvailabilityCubit>()..load(tutorId),
+              ),
+            ],
+            child: CreateRequestPage(tutorId: tutorId),
+          );
+        },
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/requests/:id',
         builder: (_, state) => BlocProvider(
           create: (_) => getIt<AppointmentRequestsCubit>(),
@@ -265,43 +304,38 @@ GoRouter createRouter(AuthBloc authBloc) {
         builder: (_, __) => const CreateTutoringRequestPage(),
       ),
 
-      // ── Reviews ──────────────────────────────────────────────────────────────
+      // ── Reviews (root navigator — pushed from profile shell tab) ───────────
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/reviews/write',
-        builder: (_, state) => BlocProvider(
-          create: (_) => getIt<ReviewsCubit>(),
-          child: WriteReviewPage(
-            appointmentId:
-                state.uri.queryParameters['appointmentId'] ?? '',
-            tutorId: state.uri.queryParameters['tutorId'] ?? '',
-          ),
+        builder: (_, state) => WriteReviewPage(
+          appointmentId: state.uri.queryParameters['appointmentId'] ?? '',
+          tutorId: state.uri.queryParameters['tutorId'] ?? '',
         ),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/reviews/my',
-        builder: (_, __) => BlocProvider(
-          create: (_) => getIt<ReviewsCubit>(),
-          child: const MyReviewsPage(),
-        ),
+        builder: (_, __) => const MyReviewsPage(),
       ),
 
-      // ── Payments ─────────────────────────────────────────────────────────────
+      // ── Payments (root navigator — pushed from profile shell tab) ──────────
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/payments',
-        builder: (_, __) => BlocProvider(
-          create: (_) => getIt<PaymentsCubit>(),
-          child: const PaymentHistoryPage(),
-        ),
+        builder: (_, __) => const PaymentHistoryPage(),
       ),
 
-      // ── Reports ──────────────────────────────────────────────────────────────
+      // ── Reports (root navigator — pushed from profile shell tab) ─────────────
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/reports/create',
         builder: (_, state) => ReportUserPage(
           reportedId: state.uri.queryParameters['reportedId'] ?? '',
         ),
       ),
       GoRoute(
+        parentNavigatorKey: _rootNavigatorKey,
         path: '/reports/my',
         builder: (_, __) => const MyReportsPage(),
       ),

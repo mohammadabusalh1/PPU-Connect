@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:ppu_connect/domain/entities/user.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/profile/profile_cubit.dart';
@@ -32,6 +33,14 @@ class _MyProfilePageState extends State<MyProfilePage> {
     }
   }
 
+  String _displayName(User user, User? authUser) {
+    final fromProfile = user.fullName.trim();
+    if (fromProfile.isNotEmpty) return fromProfile;
+    final fromAuth = authUser?.fullName.trim() ?? '';
+    if (fromAuth.isNotEmpty) return fromAuth;
+    return 'User';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -48,10 +57,43 @@ class _MyProfilePageState extends State<MyProfilePage> {
           ),
         ],
       ),
-      body: BlocBuilder<ProfileCubit, ProfileState>(
+      body: BlocConsumer<ProfileCubit, ProfileState>(
+        listenWhen: (prev, curr) => curr is ProfileInitial,
+        listener: (context, state) {
+          if (state is ProfileInitial) {
+            WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+          }
+        },
         builder: (context, state) {
-          if (state is ProfileLoading) return const _Skeleton();
+          final authState = context.watch<AuthBloc>().state;
+          final authUser =
+              authState is AuthAuthenticated ? authState.user : null;
+
+          if (state is ProfileInitial || state is ProfileLoading) {
+            return const _Skeleton();
+          }
           if (state is ProfileError) {
+            debugPrint('Profile load error: ${state.message}');
+            if (authUser != null) {
+              return ListView(
+                children: [
+                  _Header(
+                    name: _displayName(authUser, authUser),
+                    avatarUrl: authUser.avatarUrl,
+                    role: authUser.role,
+                    major: authUser.major,
+                  ),
+                  const Divider(),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: ErrorStateWidget(
+                      message: state.message,
+                      onRetry: _load,
+                    ),
+                  ),
+                ],
+              );
+            }
             return ErrorStateWidget(message: state.message, onRetry: _load);
           }
           if (state is ProfileLoaded) {
@@ -60,10 +102,12 @@ class _MyProfilePageState extends State<MyProfilePage> {
             return ListView(
               children: [
                 _Header(
-                  name: user.fullName,
-                  avatarUrl: user.avatarUrl,
+                  name: _displayName(user, authUser),
+                  avatarUrl: user.avatarUrl ?? authUser?.avatarUrl,
                   role: user.role,
-                  major: user.major,
+                  major: user.major.isNotEmpty
+                      ? user.major
+                      : (authUser?.major ?? ''),
                 ),
                 const Divider(),
                 ListTile(
@@ -115,13 +159,15 @@ class _MyProfilePageState extends State<MyProfilePage> {
                     onTap: () => context.push('/profile/availability'),
                   ),
                 ],
-                const Divider(),
-                ListTile(
-                  leading: const Icon(Icons.reviews_outlined),
-                  title: const Text('My Reviews'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push('/reviews/my'),
-                ),
+                if (user.role != UserRole.seeker) ...[
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.reviews_outlined),
+                    title: const Text('My Reviews'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push('/reviews/my'),
+                  ),
+                ],
                 ListTile(
                   leading: const Icon(Icons.payment_outlined),
                   title: const Text('Payment History'),

@@ -11,6 +11,8 @@ _$AppointmentRequestModelImpl _$$AppointmentRequestModelImplFromJson(
 ) => _$AppointmentRequestModelImpl(
   id: json['id'] as String,
   senderId: json['senderId'] as String,
+  senderName: json['senderName'] as String,
+  senderAvatarUrl: json['senderAvatarUrl'] as String?,
   receiverId: json['receiverId'] as String,
   tutorId: json['tutorId'] as String,
   seekerId: json['seekerId'] as String,
@@ -30,6 +32,8 @@ Map<String, dynamic> _$$AppointmentRequestModelImplToJson(
 ) => <String, dynamic>{
   'id': instance.id,
   'senderId': instance.senderId,
+  'senderName': instance.senderName,
+  'senderAvatarUrl': instance.senderAvatarUrl,
   'receiverId': instance.receiverId,
   'tutorId': instance.tutorId,
   'seekerId': instance.seekerId,

@@ -52,6 +52,7 @@ class _TutorProfileEditPageState extends State<TutorProfileEditPage> {
   }
 
   Future<void> _save() async {
+    FocusManager.instance.primaryFocus?.unfocus();
     final state = context.read<ProfileCubit>().state;
     if (state is! ProfileLoaded || state.tutorProfile == null) return;
 
@@ -64,7 +65,7 @@ class _TutorProfileEditPageState extends State<TutorProfileEditPage> {
     }
 
     setState(() => _saving = true);
-    await context.read<ProfileCubit>().updateTutorProfile(
+    final saved = await context.read<ProfileCubit>().updateTutorProfile(
           state.tutorProfile!.copyWith(
             bio: _bioCtrl.text.trim().isEmpty ? null : _bioCtrl.text.trim(),
             hourlyRate: rate,
@@ -74,17 +75,27 @@ class _TutorProfileEditPageState extends State<TutorProfileEditPage> {
         );
     if (mounted) {
       setState(() => _saving = false);
-      context.pop();
+      if (saved) {
+        context.pop();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save tutor profile')),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Edit Tutor Profile')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('Edit Tutor Profile')),
+        body: ListView(
+          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+          padding: const EdgeInsets.all(16),
+          children: [
           AppTextField(
             controller: _bioCtrl,
             label: 'Bio (optional)',
@@ -158,6 +169,7 @@ class _TutorProfileEditPageState extends State<TutorProfileEditPage> {
             onPressed: _save,
           ),
         ],
+        ),
       ),
     );
   }

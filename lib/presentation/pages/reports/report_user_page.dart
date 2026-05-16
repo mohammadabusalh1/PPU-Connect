@@ -5,19 +5,31 @@ import 'package:ppu_connect/domain/entities/report.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/reports/reports_cubit.dart';
+import 'package:ppu_connect/presentation/pages/reports/reports_scope.dart';
 import 'package:ppu_connect/presentation/widgets/buttons/primary_button.dart';
 import 'package:ppu_connect/presentation/widgets/form/app_text_field.dart';
 
-class ReportUserPage extends StatefulWidget {
+class ReportUserPage extends StatelessWidget {
   const ReportUserPage({super.key, required this.reportedId});
 
   final String reportedId;
 
   @override
-  State<ReportUserPage> createState() => _ReportUserPageState();
+  Widget build(BuildContext context) {
+    return ReportsScope(child: _ReportUserView(reportedId: reportedId));
+  }
 }
 
-class _ReportUserPageState extends State<ReportUserPage> {
+class _ReportUserView extends StatefulWidget {
+  const _ReportUserView({required this.reportedId});
+
+  final String reportedId;
+
+  @override
+  State<_ReportUserView> createState() => _ReportUserViewState();
+}
+
+class _ReportUserViewState extends State<_ReportUserView> {
   ReportReason _reason = ReportReason.inappropriateBehavior;
   final _detailsCtrl = TextEditingController();
   bool _submitting = false;

@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
+import 'package:ppu_connect/core/di/injection.dart';
+import 'package:ppu_connect/domain/use_cases/auth/get_current_user.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/profile_setup/profile_setup_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/buttons/primary_button.dart';
@@ -37,6 +39,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   }
 
   void _next() {
+    FocusManager.instance.primaryFocus?.unfocus();
     final cubit = context.read<ProfileSetupCubit>();
     switch (cubit.state.currentStep) {
       case 0:
@@ -100,6 +103,15 @@ class _OnboardingPageState extends State<OnboardingPage> {
     cubit.save(authState.user.id, email: authState.user.email);
   }
 
+  Future<void> _finishOnboarding(BuildContext context) async {
+    final user = await getIt<GetCurrentUser>()();
+    if (!context.mounted) return;
+    if (user != null) {
+      context.read<AuthBloc>().add(AuthUserChanged(user));
+    }
+    context.go('/discover');
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -119,7 +131,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileSetupCubit, ProfileSetupState>(
       listener: (context, state) {
-        if (state.isDone) context.go('/discover');
+        if (state.isDone) _finishOnboarding(context);
         if (state.error != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -517,9 +529,13 @@ class _TutorStep extends StatelessWidget {
     final tt = Theme.of(context).textTheme;
     final cs = Theme.of(context).colorScheme;
 
-    return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-      child: Column(
+    return GestureDetector(
+      onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
+      behavior: HitTestBehavior.opaque,
+      child: SingleChildScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+        child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -622,6 +638,7 @@ class _TutorStep extends StatelessWidget {
             ],
           ],
         ),
+      ),
     );
   }
 

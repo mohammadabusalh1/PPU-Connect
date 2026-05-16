@@ -32,21 +32,30 @@ class AppointmentRequestsCubit extends Cubit<AppointmentRequestsState> {
     );
   }
 
-  Future<void> accept(String requestId) async {
+  Future<({bool ok, String? error})> accept(String requestId) async {
     try {
       await _repo.acceptRequest(requestId);
+      return (ok: true, error: null);
     } catch (e) {
-      if (isClosed) return;
-      emit(AppointmentRequestsError(e.toString().replaceFirst('Exception: ', '')));
+      return (
+        ok: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 
-  Future<void> reject(String requestId, {String? reason}) async {
+  Future<({bool ok, String? error})> reject(
+    String requestId, {
+    String? reason,
+  }) async {
     try {
       await _repo.rejectRequest(requestId, reason: reason);
+      return (ok: true, error: null);
     } catch (e) {
-      if (isClosed) return;
-      emit(AppointmentRequestsError(e.toString().replaceFirst('Exception: ', '')));
+      return (
+        ok: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 
@@ -59,12 +68,15 @@ class AppointmentRequestsCubit extends Cubit<AppointmentRequestsState> {
     }
   }
 
-  Future<void> cancel(String requestId) async {
+  Future<({bool ok, String? error})> cancel(String requestId) async {
     try {
       await _repo.cancelRequest(requestId);
+      return (ok: true, error: null);
     } catch (e) {
-      if (isClosed) return;
-      emit(AppointmentRequestsError(e.toString().replaceFirst('Exception: ', '')));
+      return (
+        ok: false,
+        error: e.toString().replaceFirst('Exception: ', ''),
+      );
     }
   }
 

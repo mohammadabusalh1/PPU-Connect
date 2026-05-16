@@ -21,6 +21,8 @@ mixin _$Appointment {
   String get appointmentRequestId => throw _privateConstructorUsedError;
   String get tutorId => throw _privateConstructorUsedError;
   String get seekerId => throw _privateConstructorUsedError;
+  String? get tutorName => throw _privateConstructorUsedError;
+  String? get seekerName => throw _privateConstructorUsedError;
   String get subject => throw _privateConstructorUsedError;
   DateTime get startAt => throw _privateConstructorUsedError;
   DateTime get endAt => throw _privateConstructorUsedError;
@@ -50,6 +52,8 @@ abstract class $AppointmentCopyWith<$Res> {
     String appointmentRequestId,
     String tutorId,
     String seekerId,
+    String? tutorName,
+    String? seekerName,
     String subject,
     DateTime startAt,
     DateTime endAt,
@@ -81,6 +85,8 @@ class _$AppointmentCopyWithImpl<$Res, $Val extends Appointment>
     Object? appointmentRequestId = null,
     Object? tutorId = null,
     Object? seekerId = null,
+    Object? tutorName = freezed,
+    Object? seekerName = freezed,
     Object? subject = null,
     Object? startAt = null,
     Object? endAt = null,
@@ -109,6 +115,14 @@ class _$AppointmentCopyWithImpl<$Res, $Val extends Appointment>
                 ? _value.seekerId
                 : seekerId // ignore: cast_nullable_to_non_nullable
                       as String,
+            tutorName: freezed == tutorName
+                ? _value.tutorName
+                : tutorName // ignore: cast_nullable_to_non_nullable
+                      as String?,
+            seekerName: freezed == seekerName
+                ? _value.seekerName
+                : seekerName // ignore: cast_nullable_to_non_nullable
+                      as String?,
             subject: null == subject
                 ? _value.subject
                 : subject // ignore: cast_nullable_to_non_nullable
@@ -165,6 +179,8 @@ abstract class _$$AppointmentImplCopyWith<$Res>
     String appointmentRequestId,
     String tutorId,
     String seekerId,
+    String? tutorName,
+    String? seekerName,
     String subject,
     DateTime startAt,
     DateTime endAt,
@@ -195,6 +211,8 @@ class __$$AppointmentImplCopyWithImpl<$Res>
     Object? appointmentRequestId = null,
     Object? tutorId = null,
     Object? seekerId = null,
+    Object? tutorName = freezed,
+    Object? seekerName = freezed,
     Object? subject = null,
     Object? startAt = null,
     Object? endAt = null,
@@ -223,6 +241,14 @@ class __$$AppointmentImplCopyWithImpl<$Res>
             ? _value.seekerId
             : seekerId // ignore: cast_nullable_to_non_nullable
                   as String,
+        tutorName: freezed == tutorName
+            ? _value.tutorName
+            : tutorName // ignore: cast_nullable_to_non_nullable
+                  as String?,
+        seekerName: freezed == seekerName
+            ? _value.seekerName
+            : seekerName // ignore: cast_nullable_to_non_nullable
+                  as String?,
         subject: null == subject
             ? _value.subject
             : subject // ignore: cast_nullable_to_non_nullable
@@ -272,6 +298,8 @@ class _$AppointmentImpl implements _Appointment {
     required this.appointmentRequestId,
     required this.tutorId,
     required this.seekerId,
+    this.tutorName,
+    this.seekerName,
     required this.subject,
     required this.startAt,
     required this.endAt,
@@ -291,6 +319,10 @@ class _$AppointmentImpl implements _Appointment {
   final String tutorId;
   @override
   final String seekerId;
+  @override
+  final String? tutorName;
+  @override
+  final String? seekerName;
   @override
   final String subject;
   @override
@@ -312,7 +344,7 @@ class _$AppointmentImpl implements _Appointment {
 
   @override
   String toString() {
-    return 'Appointment(id: $id, appointmentRequestId: $appointmentRequestId, tutorId: $tutorId, seekerId: $seekerId, subject: $subject, startAt: $startAt, endAt: $endAt, status: $status, cancelledBy: $cancelledBy, cancelledAt: $cancelledAt, cancellationReason: $cancellationReason, createdAt: $createdAt, updatedAt: $updatedAt)';
+    return 'Appointment(id: $id, appointmentRequestId: $appointmentRequestId, tutorId: $tutorId, seekerId: $seekerId, tutorName: $tutorName, seekerName: $seekerName, subject: $subject, startAt: $startAt, endAt: $endAt, status: $status, cancelledBy: $cancelledBy, cancelledAt: $cancelledAt, cancellationReason: $cancellationReason, createdAt: $createdAt, updatedAt: $updatedAt)';
   }
 
   @override
@@ -326,6 +358,10 @@ class _$AppointmentImpl implements _Appointment {
             (identical(other.tutorId, tutorId) || other.tutorId == tutorId) &&
             (identical(other.seekerId, seekerId) ||
                 other.seekerId == seekerId) &&
+            (identical(other.tutorName, tutorName) ||
+                other.tutorName == tutorName) &&
+            (identical(other.seekerName, seekerName) ||
+                other.seekerName == seekerName) &&
             (identical(other.subject, subject) || other.subject == subject) &&
             (identical(other.startAt, startAt) || other.startAt == startAt) &&
             (identical(other.endAt, endAt) || other.endAt == endAt) &&
@@ -349,6 +385,8 @@ class _$AppointmentImpl implements _Appointment {
     appointmentRequestId,
     tutorId,
     seekerId,
+    tutorName,
+    seekerName,
     subject,
     startAt,
     endAt,
@@ -375,6 +413,8 @@ abstract class _Appointment implements Appointment {
     required final String appointmentRequestId,
     required final String tutorId,
     required final String seekerId,
+    final String? tutorName,
+    final String? seekerName,
     required final String subject,
     required final DateTime startAt,
     required final DateTime endAt,
@@ -394,6 +434,10 @@ abstract class _Appointment implements Appointment {
   String get tutorId;
   @override
   String get seekerId;
+  @override
+  String? get tutorName;
+  @override
+  String? get seekerName;
   @override
   String get subject;
   @override

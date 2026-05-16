@@ -12,6 +12,8 @@ class AppointmentRequestModel with _$AppointmentRequestModel {
   const factory AppointmentRequestModel({
     required String id,
     required String senderId,
+    required String senderName,
+    String? senderAvatarUrl,
     required String receiverId,
     required String tutorId,
     required String seekerId,
@@ -33,6 +35,8 @@ class AppointmentRequestModel with _$AppointmentRequestModel {
       AppointmentRequestModel(
         id: entity.id,
         senderId: entity.senderId,
+        senderName: entity.senderName,
+        senderAvatarUrl: entity.senderAvatarUrl,
         receiverId: entity.receiverId,
         tutorId: entity.tutorId,
         seekerId: entity.seekerId,
@@ -52,6 +56,8 @@ extension AppointmentRequestModelX on AppointmentRequestModel {
   AppointmentRequest toEntity() => AppointmentRequest(
         id: id,
         senderId: senderId,
+        senderName: senderName,
+        senderAvatarUrl: senderAvatarUrl,
         receiverId: receiverId,
         tutorId: tutorId,
         seekerId: seekerId,

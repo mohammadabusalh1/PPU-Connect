@@ -49,6 +49,10 @@ class AppTextField extends StatelessWidget {
   final bool enabled;
   final bool autofocus;
 
+  bool get _isMultiline => maxLines > 1;
+
+  void _dismissKeyboard() => FocusManager.instance.primaryFocus?.unfocus();
+
   @override
   Widget build(BuildContext context) {
     return TextFormField(
@@ -56,8 +60,10 @@ class AppTextField extends StatelessWidget {
       focusNode: focusNode,
       validator: validator,
       onChanged: onChanged,
-      onFieldSubmitted: onFieldSubmitted,
-      textInputAction: textInputAction,
+      onFieldSubmitted: onFieldSubmitted ??
+          (_isMultiline ? (_) => _dismissKeyboard() : null),
+      textInputAction:
+          textInputAction ?? (_isMultiline ? TextInputAction.done : null),
       keyboardType: keyboardType,
       inputFormatters: inputFormatters,
       obscureText: obscureText,

@@ -107,6 +107,8 @@ import 'package:ppu_connect/presentation/cubits/reviews/reviews_cubit.dart'
     as _i1032;
 import 'package:ppu_connect/presentation/cubits/schedule/schedule_cubit.dart'
     as _i979;
+import 'package:ppu_connect/presentation/cubits/tutor_availability/tutor_availability_cubit.dart'
+    as _i837;
 import 'package:ppu_connect/presentation/cubits/tutoring_requests/tutoring_requests_cubit.dart'
     as _i973;
 
@@ -207,11 +209,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i246.WatchAuthState>(
       () => _i246.WatchAuthState(gh<_i475.AuthRepository>()),
     );
-    gh.factory<_i161.AppointmentRepository>(
-      () => _i845.AppointmentRepositoryImpl(
-        gh<_i801.AppointmentRemoteDataSource>(),
-      ),
-    );
     gh.factory<_i150.PaymentRepository>(
       () => _i742.PaymentRepositoryImpl(gh<_i204.PaymentRemoteDataSource>()),
     );
@@ -227,6 +224,13 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i876.TutorProfileRepository>(
       () => _i718.TutorProfileRepositoryImpl(
         gh<_i82.TutorProfileRemoteDataSource>(),
+      ),
+    );
+    gh.factory<_i161.AppointmentRepository>(
+      () => _i845.AppointmentRepositoryImpl(
+        gh<_i801.AppointmentRemoteDataSource>(),
+        gh<_i876.TutorProfileRepository>(),
+        gh<_i915.NotificationRemoteDataSource>(),
       ),
     );
     gh.factory<_i509.AuthBloc>(
@@ -273,6 +277,12 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.factory<_i76.ReportsCubit>(
       () => _i76.ReportsCubit(gh<_i855.ReportRepository>()),
+    );
+    gh.factory<_i837.TutorAvailabilityCubit>(
+      () => _i837.TutorAvailabilityCubit(
+        gh<_i876.TutorProfileRepository>(),
+        gh<_i161.AppointmentRepository>(),
+      ),
     );
     return this;
   }

@@ -19,7 +19,7 @@ class TutorProfileModel with _$TutorProfileModel {
     required int totalReviews,
     required int completedSessions,
     required bool isAcceptingRequests,
-    required List<WeeklySlotModel> weeklySlots,
+    @WeeklySlotsConverter() required List<WeeklySlotModel> weeklySlots,
     @TimestampConverter() required DateTime createdAt,
     @TimestampConverter() required DateTime updatedAt,
   }) = _TutorProfileModel;
@@ -43,6 +43,20 @@ class TutorProfileModel with _$TutorProfileModel {
         createdAt: entity.createdAt,
         updatedAt: entity.updatedAt,
       );
+}
+
+class WeeklySlotsConverter
+    implements JsonConverter<List<WeeklySlotModel>, List<dynamic>> {
+  const WeeklySlotsConverter();
+
+  @override
+  List<WeeklySlotModel> fromJson(List<dynamic> json) => json
+      .map((e) => WeeklySlotModel.fromJson(e as Map<String, dynamic>))
+      .toList();
+
+  @override
+  List<dynamic> toJson(List<WeeklySlotModel> slots) =>
+      slots.map((e) => e.toJson()).toList();
 }
 
 extension TutorProfileModelX on TutorProfileModel {

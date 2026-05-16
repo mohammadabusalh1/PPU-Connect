@@ -6,18 +6,28 @@ import 'package:ppu_connect/core/theme/app_colors.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/reports/reports_cubit.dart';
+import 'package:ppu_connect/presentation/pages/reports/reports_scope.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:shimmer/shimmer.dart';
 
-class MyReportsPage extends StatefulWidget {
+class MyReportsPage extends StatelessWidget {
   const MyReportsPage({super.key});
 
   @override
-  State<MyReportsPage> createState() => _MyReportsPageState();
+  Widget build(BuildContext context) {
+    return const ReportsScope(child: _MyReportsView());
+  }
 }
 
-class _MyReportsPageState extends State<MyReportsPage> {
+class _MyReportsView extends StatefulWidget {
+  const _MyReportsView();
+
+  @override
+  State<_MyReportsView> createState() => _MyReportsViewState();
+}
+
+class _MyReportsViewState extends State<_MyReportsView> {
   @override
   void initState() {
     super.initState();

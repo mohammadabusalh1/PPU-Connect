@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:ppu_connect/core/di/injection.dart';
+import 'package:ppu_connect/domain/entities/user_display.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/cubits/profile/profile_cubit.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
@@ -36,7 +37,7 @@ class PublicProfilePage extends StatelessWidget {
               final tutor = state.tutorProfile;
               return ListView(
                 children: [
-                  _buildHeader(context, user.fullName, user.avatarUrl,
+                  _buildHeader(context, user.displayName, user.avatarUrl,
                       user.role, user.major),
                   if (tutor != null) ...[
                     const Divider(),

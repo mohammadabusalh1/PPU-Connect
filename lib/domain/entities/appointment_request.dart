@@ -9,6 +9,8 @@ class AppointmentRequest with _$AppointmentRequest {
   const factory AppointmentRequest({
     required String id,
     required String senderId,
+    required String senderName,
+    String? senderAvatarUrl,
     required String receiverId,
     required String tutorId,
     required String seekerId,

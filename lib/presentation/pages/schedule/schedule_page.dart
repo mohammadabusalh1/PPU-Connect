@@ -44,6 +44,13 @@ class _SchedulePageState extends State<SchedulePage>
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final role =
+        authState is AuthAuthenticated ? authState.user.role : UserRole.seeker;
+    final isTutor = role == UserRole.tutor;
+    final showSentRequests = !isTutor;
+    final showDiscoverTutors = !isTutor;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('My Schedule'),
@@ -55,11 +62,12 @@ class _SchedulePageState extends State<SchedulePage>
           ],
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.send_outlined),
-            tooltip: 'Sent Requests',
-            onPressed: () => context.push('/requests/sent'),
-          ),
+          if (showSentRequests)
+            IconButton(
+              icon: const Icon(Icons.send_outlined),
+              tooltip: 'Sent Requests',
+              onPressed: () => context.push('/requests/sent'),
+            ),
         ],
       ),
       body: BlocBuilder<ScheduleCubit, ScheduleState>(
@@ -90,14 +98,20 @@ class _SchedulePageState extends State<SchedulePage>
               children: [
                 _AppointmentList(
                   appointments: upcoming,
+                  isTutor: isTutor,
                   emptyTitle: 'No upcoming sessions',
-                  subtitle: 'Book a session and it will show up here',
+                  subtitle: isTutor
+                      ? 'Accepted requests will appear here'
+                      : 'Book a session and it will show up here',
                   lottieAsset: AppLottie.emptySearch,
-                  actionLabel: 'Discover tutors',
-                  action: () => context.push('/discover'),
+                  actionLabel: showDiscoverTutors ? 'Discover tutors' : null,
+                  action: showDiscoverTutors
+                      ? () => context.push('/discover')
+                      : null,
                 ),
                 _AppointmentList(
                   appointments: past,
+                  isTutor: isTutor,
                   emptyTitle: 'No past sessions',
                   subtitle: 'Completed or cancelled sessions will appear here',
                   lottieAsset: AppLottie.emptySearch,
@@ -115,6 +129,7 @@ class _SchedulePageState extends State<SchedulePage>
 class _AppointmentList extends StatelessWidget {
   const _AppointmentList({
     required this.appointments,
+    required this.isTutor,
     required this.emptyTitle,
     this.subtitle,
     this.lottieAsset,
@@ -123,6 +138,7 @@ class _AppointmentList extends StatelessWidget {
   });
 
   final List appointments;
+  final bool isTutor;
   final String emptyTitle;
   final String? subtitle;
   final String? lottieAsset;
@@ -146,9 +162,12 @@ class _AppointmentList extends StatelessWidget {
       separatorBuilder: (_, __) => const SizedBox(height: 12),
       itemBuilder: (context, i) {
         final a = appointments[i];
+        final peerName = isTutor
+            ? (a.seekerName ?? 'Student')
+            : (a.tutorName ?? 'Tutor');
         return AppointmentCard(
           appointment: a,
-          peerName: a.tutorId,
+          peerName: peerName,
           onTap: () => context.push('/schedule/appointments/${a.id}'),
         ).animate(delay: (i * 40).ms).fadeIn(duration: 250.ms);
       },

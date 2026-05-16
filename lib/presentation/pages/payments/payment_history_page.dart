@@ -6,18 +6,28 @@ import 'package:intl/intl.dart';
 import 'package:ppu_connect/domain/enums/enums.dart';
 import 'package:ppu_connect/presentation/blocs/auth/auth_bloc.dart';
 import 'package:ppu_connect/presentation/cubits/payments/payments_cubit.dart';
+import 'package:ppu_connect/presentation/pages/payments/payments_scope.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/empty_state_widget.dart';
 import 'package:ppu_connect/presentation/widgets/feedback/error_state_widget.dart';
 import 'package:shimmer/shimmer.dart';
 
-class PaymentHistoryPage extends StatefulWidget {
+class PaymentHistoryPage extends StatelessWidget {
   const PaymentHistoryPage({super.key});
 
   @override
-  State<PaymentHistoryPage> createState() => _PaymentHistoryPageState();
+  Widget build(BuildContext context) {
+    return const PaymentsScope(child: _PaymentHistoryView());
+  }
 }
 
-class _PaymentHistoryPageState extends State<PaymentHistoryPage> {
+class _PaymentHistoryView extends StatefulWidget {
+  const _PaymentHistoryView();
+
+  @override
+  State<_PaymentHistoryView> createState() => _PaymentHistoryViewState();
+}
+
+class _PaymentHistoryViewState extends State<_PaymentHistoryView> {
   @override
   void initState() {
     super.initState();

@@ -14,4 +14,9 @@ abstract interface class AppointmentRepository {
   Future<void> cancelAppointment(String appointmentId, {String? reason});
   Stream<List<Appointment>> watchAppointments(String userId);
   Future<Appointment?> getAppointment(String appointmentId);
+  Future<List<Appointment>> getConfirmedAppointmentsForTutor({
+    required String tutorId,
+    required DateTime from,
+    required DateTime to,
+  });
 }
